@@ -7,18 +7,17 @@ More detailed description, with
 
 */
 
-// use ...
+use crate::error;
+use crate::model::block::{BlockContent, HasBlockContent};
+use crate::model::ComplexContent;
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
 // ------------------------------------------------------------------------------------------------
 
-use crate::model::blocks::BlockContent;
-
 #[derive(Clone, Debug)]
-pub struct CodeBlock {
-    code: String,
-    language: Option<String>,
+pub struct Quote {
+    content: Vec<BlockContent>,
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -33,17 +32,38 @@ pub struct CodeBlock {
 // Implementations
 // ------------------------------------------------------------------------------------------------
 
-block_impls!(CodeBlock);
-
-impl CodeBlock {
-    pub fn code(&self) -> &String {
-        &self.code
-    }
-
-    pub fn language(&self) -> &Option<String> {
-        &self.language
+impl Default for Quote {
+    fn default() -> Self {
+        Self {
+            content: Default::default(),
+        }
     }
 }
+
+impl From<BlockContent> for Quote {
+    fn from(v: BlockContent) -> Self {
+        Self { content: vec![v] }
+    }
+}
+
+block_impls!(Quote);
+
+impl ComplexContent<BlockContent> for Quote {
+    fn inner(&self) -> &Vec<BlockContent> {
+        &self.content
+    }
+
+    fn inner_mut(&mut self) -> &mut Vec<BlockContent> {
+        &mut self.content
+    }
+
+    fn add_content(&mut self, content: BlockContent) -> error::Result<()> {
+        self.content.push(content);
+        Ok(())
+    }
+}
+
+impl HasBlockContent for Quote {}
 
 // ------------------------------------------------------------------------------------------------
 // Private Functions

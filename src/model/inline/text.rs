@@ -8,8 +8,8 @@ More detailed description, with
 */
 
 use crate::error;
-use crate::model::inline::InlineContent;
-use crate::model::{Style, Styled};
+use crate::model::inline::{HasInlineContent, InlineContent};
+use crate::model::{ComplexContent, Style, Styled};
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
@@ -33,12 +33,14 @@ pub enum TextStyle {
 }
 
 #[derive(Clone, Debug)]
-pub struct Text {
-    inner: String,
+pub struct Text(String);
+
+#[derive(Clone, Debug)]
+pub struct Span {
+    inner: Vec<InlineContent>,
     styles: Vec<TextStyle>,
 }
 
-// TODO: super/sub script <https://pandoc.org/MANUAL.html#superscripts-and-subscripts>
 // TODO: math <https://pandoc.org/MANUAL.html#math>
 
 // ------------------------------------------------------------------------------------------------
@@ -65,6 +67,38 @@ impl Style for TextStyle {}
 
 impl Default for Text {
     fn default() -> Self {
+        Self(String::new())
+    }
+}
+
+impl From<String> for Text {
+    fn from(s: String) -> Self {
+        Self(s)
+    }
+}
+
+impl From<&str> for Text {
+    fn from(s: &str) -> Self {
+        Self(s.to_string())
+    }
+}
+
+inline_impls!(Text);
+
+impl Text {
+    pub fn inner(&self) -> &String {
+        &self.0
+    }
+
+    pub fn into_inner(self) -> String {
+        self.0
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
+
+impl Default for Span {
+    fn default() -> Self {
         Self {
             inner: Default::default(),
             styles: Default::default(),
@@ -72,21 +106,11 @@ impl Default for Text {
     }
 }
 
-impl From<String> for Text {
-    fn from(s: String) -> Self {
-        Self::new(&s)
-    }
-}
+inline_impls!(Span);
 
-impl From<&str> for Text {
-    fn from(s: &str) -> Self {
-        Self::new(s)
-    }
-}
+has_inline_impls!(Span);
 
-inline_impls!(Text);
-
-impl Styled<TextStyle> for Text {
+impl Styled<TextStyle> for Span {
     fn styles(&self) -> &Vec<TextStyle> {
         &self.styles
     }
@@ -101,84 +125,27 @@ impl Styled<TextStyle> for Text {
     }
 }
 
-impl Text {
+impl Span {
     pub fn new(inner: &str) -> Self {
         Self::new_with_style(inner, Default::default())
     }
 
     pub fn new_with_style(inner: &str, style: TextStyle) -> Self {
         Self {
-            inner: inner.to_string(),
+            inner: vec![Text::from(inner).into()],
             styles: vec![style],
         }
     }
 
-    pub fn plain(inner: &str) -> Self {
-        Self::new_with_style(inner, TextStyle::Plain)
+    pub fn new_inner(inner: InlineContent) -> Self {
+        Self::new_inner_with_style(inner, Default::default())
     }
 
-    pub fn italic(inner: &str) -> Self {
-        Self::new_with_style(inner, TextStyle::Italic)
-    }
-
-    pub fn slanted(inner: &str) -> Self {
-        Self::new_with_style(inner, TextStyle::Slanted)
-    }
-
-    pub fn quote(inner: &str) -> Self {
-        Self::new_with_style(inner, TextStyle::Quote)
-    }
-
-    pub fn light(inner: &str) -> Self {
-        Self::new_with_style(inner, TextStyle::Light)
-    }
-
-    pub fn bold(inner: &str) -> Self {
-        Self::new_with_style(inner, TextStyle::Bold)
-    }
-
-    pub fn mono(inner: &str) -> Self {
-        Self::new_with_style(inner, TextStyle::Mono)
-    }
-
-    pub fn code(inner: &str) -> Self {
-        Self::new_with_style(inner, TextStyle::Code)
-    }
-
-    pub fn strikethrough(inner: &str) -> Self {
-        Self::new_with_style(inner, TextStyle::Strikethrough)
-    }
-
-    pub fn underline(inner: &str) -> Self {
-        Self::new_with_style(inner, TextStyle::Underline)
-    }
-
-    pub fn small_caps(inner: &str) -> Self {
-        Self::new_with_style(inner, TextStyle::SmallCaps)
-    }
-
-    pub fn superscript(inner: &str) -> Self {
-        Self::new_with_style(inner, TextStyle::Superscript)
-    }
-
-    pub fn subscript(inner: &str) -> Self {
-        Self::new_with_style(inner, TextStyle::Subscript)
-    }
-
-    // --------------------------------------------------------------------------------------------
-
-    pub fn set_text(&mut self, text: &str) {
-        self.inner = text.to_string();
-    }
-
-    pub fn add_style(&mut self, style: TextStyle) {
-        self.styles.push(style);
-    }
-
-    // --------------------------------------------------------------------------------------------
-
-    pub fn text(&self) -> &String {
-        &self.inner
+    pub fn new_inner_with_style(inner: InlineContent, style: TextStyle) -> Self {
+        Self {
+            inner: vec![inner],
+            styles: vec![style],
+        }
     }
 }
 

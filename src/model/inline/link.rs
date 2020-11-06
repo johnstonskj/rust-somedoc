@@ -41,6 +41,24 @@ pub struct HyperLink {
 
 inline_impls!(HyperLink);
 
+impl From<String> for HyperLink {
+    fn from(s: String) -> Self {
+        Self::external(&s)
+    }
+}
+
+impl From<&str> for HyperLink {
+    fn from(s: &str) -> Self {
+        Self::external(s)
+    }
+}
+
+impl From<Anchor> for HyperLink {
+    fn from(a: Anchor) -> Self {
+        Self::internal(a)
+    }
+}
+
 impl HyperLink {
     pub fn external(target: &str) -> Self {
         Self::new_external(target, None, None)

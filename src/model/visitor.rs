@@ -7,8 +7,8 @@ More detailed description, with
 
 */
 
-use crate::model::blocks::quote::Quote;
-use crate::model::blocks::{
+use crate::model::block::quote::Quote;
+use crate::model::block::{
     BlockContent, CodeBlock, DefinitionList, Heading, List, Paragraph, Table,
 };
 use crate::model::document::{Document, Metadata};

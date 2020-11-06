@@ -55,7 +55,7 @@ pub trait HasBlockContent: Default + ComplexContent<BlockContent> {
 
     fn listing(inner: CodeBlock) -> Self {
         let mut new_self = Self::default();
-        new_self.add_listing(inner);
+        new_self.add_code_block(inner);
         new_self
     }
 
@@ -99,7 +99,7 @@ pub trait HasBlockContent: Default + ComplexContent<BlockContent> {
         self.add_content(inner.into()).unwrap()
     }
 
-    fn add_listing(&mut self, inner: CodeBlock) {
+    fn add_code_block(&mut self, inner: CodeBlock) {
         self.add_content(inner.into()).unwrap()
     }
 
@@ -123,68 +123,6 @@ pub trait HasBlockContent: Default + ComplexContent<BlockContent> {
 // ------------------------------------------------------------------------------------------------
 // Private Macros
 // ------------------------------------------------------------------------------------------------
-
-macro_rules! block_impls {
-    ($name:ident) => {
-        impl Into<BlockContent> for $name {
-            fn into(self) -> BlockContent {
-                BlockContent::$name(self)
-            }
-        }
-    };
-}
-
-macro_rules! has_inline_impls {
-    ($name:ident) => {
-        impl ComplexContent<InlineContent> for $name {
-            fn inner(&self) -> &Vec<InlineContent> {
-                &self.inner
-            }
-
-            fn inner_mut(&mut self) -> &mut Vec<InlineContent> {
-                &mut self.inner
-            }
-
-            fn add_content(&mut self, content: InlineContent) -> error::Result<()> {
-                self.inner.push(content);
-                Ok(())
-            }
-        }
-
-        impl HasInlineContent for $name {}
-
-        impl From<InlineContent> for $name {
-            fn from(value: InlineContent) -> Self {
-                let mut new_self = Self::default();
-                new_self.add_content(value).unwrap();
-                new_self
-            }
-        }
-
-        impl From<Vec<InlineContent>> for $name {
-            fn from(value: Vec<InlineContent>) -> Self {
-                let mut new_self = Self::default();
-                let mut value = value;
-                for value in value.drain(..) {
-                    new_self.add_content(value).unwrap();
-                }
-                new_self
-            }
-        }
-
-        impl From<String> for $name {
-            fn from(s: String) -> Self {
-                Self::text_str(&s)
-            }
-        }
-
-        impl From<&str> for $name {
-            fn from(s: &str) -> Self {
-                Self::text_str(s)
-            }
-        }
-    };
-}
 
 // ------------------------------------------------------------------------------------------------
 // Public Functions

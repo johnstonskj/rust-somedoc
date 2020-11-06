@@ -7,17 +7,18 @@ More detailed description, with
 
 */
 
-use crate::error;
-use crate::model::blocks::{BlockContent, HasBlockContent};
-use crate::model::ComplexContent;
+// use ...
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
 // ------------------------------------------------------------------------------------------------
 
+use crate::model::block::BlockContent;
+
 #[derive(Clone, Debug)]
-pub struct Quote {
-    content: Vec<BlockContent>,
+pub struct CodeBlock {
+    code: String,
+    language: Option<String>,
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -32,38 +33,31 @@ pub struct Quote {
 // Implementations
 // ------------------------------------------------------------------------------------------------
 
-impl Default for Quote {
-    fn default() -> Self {
+block_impls!(CodeBlock);
+
+impl CodeBlock {
+    pub fn new(code: String) -> Self {
         Self {
-            content: Default::default(),
+            code,
+            language: None,
         }
     }
-}
 
-impl From<BlockContent> for Quote {
-    fn from(v: BlockContent) -> Self {
-        Self { content: vec![v] }
+    pub fn new_with_language(code: String, language: String) -> Self {
+        Self {
+            code,
+            language: Some(language),
+        }
+    }
+
+    pub fn code(&self) -> &String {
+        &self.code
+    }
+
+    pub fn language(&self) -> &Option<String> {
+        &self.language
     }
 }
-
-block_impls!(Quote);
-
-impl ComplexContent<BlockContent> for Quote {
-    fn inner(&self) -> &Vec<BlockContent> {
-        &self.content
-    }
-
-    fn inner_mut(&mut self) -> &mut Vec<BlockContent> {
-        &mut self.content
-    }
-
-    fn add_content(&mut self, content: BlockContent) -> error::Result<()> {
-        self.content.push(content);
-        Ok(())
-    }
-}
-
-impl HasBlockContent for Quote {}
 
 // ------------------------------------------------------------------------------------------------
 // Private Functions

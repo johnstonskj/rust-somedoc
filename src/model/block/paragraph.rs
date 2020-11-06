@@ -8,8 +8,8 @@ More detailed description, with
 */
 
 use crate::error;
-use crate::model::blocks::BlockContent;
-use crate::model::inline::{HasInlineContent, InlineContent, Text};
+use crate::model::block::BlockContent;
+use crate::model::inline::{HasInlineContent, InlineContent, Span};
 use crate::model::{ComplexContent, Style, Styled};
 
 // ------------------------------------------------------------------------------------------------
@@ -100,26 +100,8 @@ impl Styled<ParagraphStyle> for Paragraph {
 impl Paragraph {
     pub fn new(inner: &str, style: ParagraphStyle) -> Self {
         Self {
-            inner: vec![Text::plain(inner).into()],
+            inner: vec![Span::plain_str(inner).into()],
             styles: vec![style],
-        }
-    }
-
-    pub fn plain_text(inner: &str) -> Self {
-        Self::new(inner, ParagraphStyle::Plain)
-    }
-
-    pub fn italic_text(inner: &str) -> Self {
-        Self {
-            inner: vec![Text::italic(inner).into()],
-            styles: vec![ParagraphStyle::Plain],
-        }
-    }
-
-    pub fn bold_text(inner: &str) -> Self {
-        Self {
-            inner: vec![Text::bold(inner).into()],
-            styles: vec![ParagraphStyle::Plain],
         }
     }
 

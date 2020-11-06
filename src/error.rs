@@ -31,4 +31,8 @@ error_chain! {
             display("The provided value is not a known document format.")
         }
     }
+    foreign_links {
+        Fmt(::std::fmt::Error);
+        Io(::std::io::Error);
+    }
 }

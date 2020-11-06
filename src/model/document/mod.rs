@@ -8,7 +8,7 @@ More detailed description, with
 */
 
 use crate::error;
-use crate::model::blocks::{BlockContent, HasBlockContent};
+use crate::model::block::{BlockContent, HasBlockContent};
 use crate::model::ComplexContent;
 use std::fmt::{Display, Formatter};
 

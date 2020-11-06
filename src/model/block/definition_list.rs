@@ -7,7 +7,7 @@ More detailed description, with
 
 */
 use crate::error;
-use crate::model::blocks::BlockContent;
+use crate::model::block::BlockContent;
 use crate::model::inline::{HasInlineContent, InlineContent};
 use crate::model::ComplexContent;
 
@@ -15,26 +15,25 @@ use crate::model::ComplexContent;
 // Public Types
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum ListKind {
-    Ordered,
-    Unordered,
+#[derive(Clone, Debug)]
+pub struct DefinitionList {
+    inner: Vec<DefinitionListItem>,
 }
 
 #[derive(Clone, Debug)]
-pub struct List {
-    kind: ListKind,
-    inner: Vec<ListItem>,
+pub enum DefinitionListItem {
+    List(DefinitionList),
+    Item(Definition),
 }
 
 #[derive(Clone, Debug)]
-pub enum ListItem {
-    List(List),
-    Item(Item),
+pub struct Definition {
+    term: DefinitionPart,
+    text: DefinitionPart,
 }
 
 #[derive(Clone, Debug)]
-pub struct Item {
+pub struct DefinitionPart {
     inner: Vec<InlineContent>,
 }
 
@@ -50,85 +49,35 @@ pub struct Item {
 // Implementations
 // ------------------------------------------------------------------------------------------------
 
-impl Default for ListKind {
+impl Default for DefinitionList {
     fn default() -> Self {
-        Self::Unordered
-    }
-}
-
-// ------------------------------------------------------------------------------------------------
-
-impl Default for List {
-    fn default() -> Self {
-        Self::new(Default::default())
-    }
-}
-
-block_impls!(List);
-
-impl List {
-    pub fn new(kind: ListKind) -> Self {
         Self {
-            kind,
             inner: Default::default(),
         }
     }
+}
 
-    pub fn ordered() -> Self {
-        Self::new(ListKind::Ordered)
-    }
+block_impls!(DefinitionList);
 
-    pub fn unordered() -> Self {
-        Self::new(ListKind::Unordered)
-    }
-
-    pub fn inner(&self) -> &Vec<ListItem> {
+impl DefinitionList {
+    pub fn inner(&self) -> &Vec<DefinitionListItem> {
         &self.inner
     }
 
-    pub fn add_item(&mut self, item: ListItem) {
+    pub fn add_item(&mut self, item: DefinitionListItem) {
         self.inner.push(item);
     }
-
-    pub fn is_ordered(&self) -> bool {
-        match self.kind {
-            ListKind::Ordered => true,
-            _ => false,
-        }
-    }
-
-    pub fn kind(&self) -> &ListKind {
-        &self.kind
-    }
 }
 
 // ------------------------------------------------------------------------------------------------
 
-impl Default for Item {
-    fn default() -> Self {
-        Self {
-            inner: Default::default(),
-        }
-    }
-}
-
-has_inline_impls!(Item);
-
-// ------------------------------------------------------------------------------------------------
-
-impl From<List> for ListItem {
-    fn from(value: List) -> Self {
+impl From<DefinitionList> for DefinitionListItem {
+    fn from(value: DefinitionList) -> Self {
         Self::List(value)
     }
 }
 
-impl From<Item> for ListItem {
-    fn from(value: Item) -> Self {
-        Self::Item(value)
-    }
-}
-
-impl ListItem {
+impl DefinitionListItem {
     pub fn is_sub_list(&self) -> bool {
         match &self {
             Self::List(_) => true,
@@ -143,6 +92,34 @@ impl ListItem {
         }
     }
 }
+
+// ------------------------------------------------------------------------------------------------
+
+impl Definition {
+    pub fn new(term: DefinitionPart, text: DefinitionPart) -> Self {
+        Self { term, text }
+    }
+
+    pub fn term(&self) -> &DefinitionPart {
+        &self.term
+    }
+
+    pub fn text(&self) -> &DefinitionPart {
+        &self.text
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
+
+impl Default for DefinitionPart {
+    fn default() -> Self {
+        Self {
+            inner: Default::default(),
+        }
+    }
+}
+
+has_inline_impls!(DefinitionPart);
 
 // ------------------------------------------------------------------------------------------------
 // Private Functions

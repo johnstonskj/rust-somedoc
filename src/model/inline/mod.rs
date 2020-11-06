@@ -21,6 +21,7 @@ pub enum InlineContent {
     Text(Text),
     Character(Character),
     LineBreak,
+    Span(Span),
 }
 
 pub trait HasInlineContent: Default + ComplexContent<InlineContent> {
@@ -81,6 +82,12 @@ pub trait HasInlineContent: Default + ComplexContent<InlineContent> {
         new_self
     }
 
+    fn span(span: Span) -> Self {
+        let mut new_self = Self::default();
+        new_self.add_span(span);
+        new_self
+    }
+
     fn add_anchor(&mut self, inner: Anchor) {
         self.add_content(inner.into()).unwrap()
     }
@@ -109,21 +116,119 @@ pub trait HasInlineContent: Default + ComplexContent<InlineContent> {
     fn add_line_break(&mut self) {
         self.add_content(InlineContent::LineBreak).unwrap()
     }
+
+    fn add_span(&mut self, inner: Span) {
+        self.add_content(InlineContent::Span(inner.into())).unwrap()
+    }
+
+    fn plain(inner: InlineContent) -> Self {
+        Self::span(Span::new_inner_with_style(inner, TextStyle::Plain))
+    }
+
+    fn plain_str(inner: &str) -> Self {
+        Self::span(Span::new_with_style(inner, TextStyle::Plain))
+    }
+
+    fn italic(inner: InlineContent) -> Self {
+        Self::span(Span::new_inner_with_style(inner, TextStyle::Italic))
+    }
+
+    fn italic_str(inner: &str) -> Self {
+        Self::span(Span::new_with_style(inner, TextStyle::Italic))
+    }
+
+    fn slanted(inner: InlineContent) -> Self {
+        Self::span(Span::new_inner_with_style(inner, TextStyle::Slanted))
+    }
+
+    fn slanted_str(inner: &str) -> Self {
+        Self::span(Span::new_with_style(inner, TextStyle::Slanted))
+    }
+
+    fn quote(inner: InlineContent) -> Self {
+        Self::span(Span::new_inner_with_style(inner, TextStyle::Quote))
+    }
+
+    fn quote_str(inner: &str) -> Self {
+        Self::span(Span::new_with_style(inner, TextStyle::Quote))
+    }
+
+    fn light(inner: InlineContent) -> Self {
+        Self::span(Span::new_inner_with_style(inner, TextStyle::Light))
+    }
+
+    fn light_str(inner: &str) -> Self {
+        Self::span(Span::new_with_style(inner, TextStyle::Light))
+    }
+
+    fn bold(inner: InlineContent) -> Self {
+        Self::span(Span::new_inner_with_style(inner, TextStyle::Bold))
+    }
+
+    fn bold_str(inner: &str) -> Self {
+        Self::span(Span::new_with_style(inner, TextStyle::Bold))
+    }
+
+    fn mono(inner: InlineContent) -> Self {
+        Self::span(Span::new_inner_with_style(inner, TextStyle::Mono))
+    }
+
+    fn mono_str(inner: &str) -> Self {
+        Self::span(Span::new_with_style(inner, TextStyle::Mono))
+    }
+
+    fn code(inner: InlineContent) -> Self {
+        Self::span(Span::new_inner_with_style(inner, TextStyle::Code))
+    }
+
+    fn code_str(inner: &str) -> Self {
+        Self::span(Span::new_with_style(inner, TextStyle::Code))
+    }
+
+    fn strikethrough(inner: InlineContent) -> Self {
+        Self::span(Span::new_inner_with_style(inner, TextStyle::Strikethrough))
+    }
+
+    fn strikethrough_str(inner: &str) -> Self {
+        Self::span(Span::new_with_style(inner, TextStyle::Strikethrough))
+    }
+
+    fn underline(inner: InlineContent) -> Self {
+        Self::span(Span::new_inner_with_style(inner, TextStyle::Underline))
+    }
+
+    fn underline_str(inner: &str) -> Self {
+        Self::span(Span::new_with_style(inner, TextStyle::Underline))
+    }
+
+    fn small_caps(inner: InlineContent) -> Self {
+        Self::span(Span::new_inner_with_style(inner, TextStyle::SmallCaps))
+    }
+
+    fn small_caps_str(inner: &str) -> Self {
+        Self::span(Span::new_with_style(inner, TextStyle::SmallCaps))
+    }
+
+    fn superscript(inner: InlineContent) -> Self {
+        Self::span(Span::new_inner_with_style(inner, TextStyle::Superscript))
+    }
+
+    fn superscript_str(inner: &str) -> Self {
+        Self::span(Span::new_with_style(inner, TextStyle::Superscript))
+    }
+
+    fn subscript(inner: InlineContent) -> Self {
+        Self::span(Span::new_inner_with_style(inner, TextStyle::Subscript))
+    }
+
+    fn subscript_str(inner: &str) -> Self {
+        Self::span(Span::new_with_style(inner, TextStyle::Subscript))
+    }
 }
 
 // ------------------------------------------------------------------------------------------------
 // Private Macros
 // ------------------------------------------------------------------------------------------------
-
-macro_rules! inline_impls {
-    ($name:ident) => {
-        impl Into<InlineContent> for $name {
-            fn into(self) -> InlineContent {
-                InlineContent::$name(self)
-            }
-        }
-    };
-}
 
 // ------------------------------------------------------------------------------------------------
 // Public Functions
@@ -154,4 +259,4 @@ pub mod image;
 pub use image::Image;
 
 pub mod text;
-pub use text::{Text, TextStyle};
+pub use text::{Span, Text, TextStyle};

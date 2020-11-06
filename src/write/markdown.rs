@@ -8,14 +8,14 @@ More detailed description, with
 */
 
 use crate::error;
-use crate::model::blocks::quote::Quote;
-use crate::model::blocks::table::Alignment;
-use crate::model::blocks::{
+use crate::model::block::quote::Quote;
+use crate::model::block::table::Alignment;
+use crate::model::block::{
     BlockContent, CodeBlock, DefinitionList, DefinitionListItem, Heading, HeadingKind, List,
     ListItem, Paragraph, Table,
 };
 use crate::model::inline::{
-    Character, HyperLink, HyperLinkTarget, Image, InlineContent, Text, TextStyle,
+    Character, HyperLink, HyperLinkTarget, Image, InlineContent, Span, TextStyle,
 };
 use crate::model::{ComplexContent, Document, Styled};
 use crate::write::OutputFormat;
@@ -74,7 +74,6 @@ struct Features {
     has_code_syntax: bool,
     has_strikethrough: bool,
     metadata: Option<MetadataFlavor>,
-    toc_block: Option<&'static str>,
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -130,7 +129,6 @@ const STRICT_FEATURES: Features = Features {
     has_code_syntax: false,
     has_strikethrough: false,
     metadata: None,
-    toc_block: None,
 };
 
 const COMMONMARK_FEATURES: Features = Features {
@@ -140,7 +138,6 @@ const COMMONMARK_FEATURES: Features = Features {
     has_code_syntax: true,
     has_strikethrough: false,
     metadata: None,
-    toc_block: None,
 };
 
 const GFM_FEATURES: Features = Features {
@@ -150,7 +147,6 @@ const GFM_FEATURES: Features = Features {
     has_code_syntax: true,
     has_strikethrough: true,
     metadata: None,
-    toc_block: None,
 };
 
 const MMD_FEATURES: Features = Features {
@@ -160,7 +156,6 @@ const MMD_FEATURES: Features = Features {
     has_code_syntax: true,
     has_strikethrough: false,
     metadata: Some(MetadataFlavor::Yaml),
-    toc_block: Some("{{TOC}}"),
 };
 
 const PHP_EXTRA_FEATURES: Features = Features {
@@ -170,7 +165,6 @@ const PHP_EXTRA_FEATURES: Features = Features {
     has_code_syntax: false,
     has_strikethrough: false,
     metadata: None,
-    toc_block: None,
 };
 
 // ------------------------------------------------------------------------------------------------
@@ -494,17 +488,18 @@ fn write_inlines<W: Write>(
             InlineContent::HyperLink(value) => write_link(w, value)?,
             InlineContent::Anchor(_) => {}
             InlineContent::Image(image) => write_image(w, image, true)?,
-            InlineContent::Text(value) => write_text(w, value)?,
+            InlineContent::Text(value) => write!(w.w, "{}", value.inner())?,
             InlineContent::Character(value) => write_character(w, value)?,
             InlineContent::LineBreak => {
                 writeln!(w.w, "  ")?;
             }
+            InlineContent::Span(value) => write_span(w, value)?,
         }
     }
     Ok(())
 }
 
-fn write_text<W: Write>(w: &mut MarkdownWriter<W>, content: &Text) -> std::io::Result<()> {
+fn write_span<W: Write>(w: &mut MarkdownWriter<W>, content: &Span) -> std::io::Result<()> {
     let mut style_stack = Vec::new();
     for style in content.styles() {
         let delim: &str = match style {
@@ -528,7 +523,7 @@ fn write_text<W: Write>(w: &mut MarkdownWriter<W>, content: &Text) -> std::io::R
         write!(w.w, "{}", delim)?;
         style_stack.push(delim);
     }
-    write!(w.w, "{}", content.text())?;
+    write_inlines(w, content.inner())?;
     for delim in style_stack.iter().rev() {
         write!(w.w, "{}", delim)?;
     }

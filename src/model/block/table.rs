@@ -8,7 +8,7 @@ More detailed description, with
 */
 
 use crate::error;
-use crate::model::blocks::BlockContent;
+use crate::model::block::BlockContent;
 use crate::model::inline::HasInlineContent;
 use crate::model::inline::{Character, InlineContent};
 use crate::model::ComplexContent;
@@ -67,6 +67,15 @@ impl Default for Alignment {
 
 // ------------------------------------------------------------------------------------------------
 
+impl Default for Table {
+    fn default() -> Self {
+        Self {
+            columns: Default::default(),
+            rows: Default::default(),
+        }
+    }
+}
+
 block_impls!(Table);
 
 impl Table {
@@ -77,8 +86,24 @@ impl Table {
         }
     }
 
+    pub fn has_columns(&self) -> bool {
+        !self.columns.is_empty()
+    }
+
     pub fn columns(&self) -> &Vec<Column> {
         &self.columns
+    }
+
+    pub fn add_column(&mut self, column: Column) {
+        self.columns.push(column)
+    }
+
+    pub fn add_columns(&mut self, columns: &[Column]) {
+        self.columns.extend_from_slice(columns)
+    }
+
+    pub fn has_rows(&self) -> bool {
+        !self.rows.is_empty()
     }
 
     pub fn rows(&self) -> &Vec<Row> {

@@ -7,13 +7,13 @@ More detailed description, with
 
 */
 
-use crate::model::blocks::quote::Quote;
-use crate::model::blocks::{
+use crate::model::block::quote::Quote;
+use crate::model::block::{
     BlockContent, CodeBlock, DefinitionList, DefinitionListItem, Heading, HeadingKind, List,
     ListItem, Paragraph, Table,
 };
 use crate::model::inline::{
-    Character, HyperLink, HyperLinkTarget, Image, InlineContent, Text, TextStyle,
+    Character, HyperLink, HyperLinkTarget, Image, InlineContent, Span, TextStyle,
 };
 use crate::model::{ComplexContent, Document, Styled};
 use std::io::Write;
@@ -209,7 +209,7 @@ fn write_quote<W: Write>(w: &mut XWikiWriter<W>, content: &Quote) -> std::io::Re
 fn write_table<W: Write>(w: &mut XWikiWriter<W>, content: &Table) -> std::io::Result<()> {
     debug!("xwiki::write_table({:?})", content);
     if !content.columns().is_empty() {
-        write!(w.w, "(% border=\"1\" %)")?;
+        writeln!(w.w, "(% border=\"1\" %)")?;
         for column in content.columns() {
             write!(w.w, "|={}", column.label())?;
         }
@@ -251,17 +251,18 @@ fn write_inlines<W: Write>(
             InlineContent::HyperLink(value) => write_link(w, value)?,
             InlineContent::Anchor(_) => {}
             InlineContent::Image(image) => write_image(w, image, true)?,
-            InlineContent::Text(value) => write_text(w, value)?,
+            InlineContent::Text(value) => write!(w.w, "{}", value.inner())?,
             InlineContent::Character(value) => write_character(w, value)?,
             InlineContent::LineBreak => {
                 writeln!(w.w, "\\")?;
             }
+            InlineContent::Span(value) => write_span(w, value)?,
         }
     }
     Ok(())
 }
 
-fn write_text<W: Write>(w: &mut XWikiWriter<W>, content: &Text) -> std::io::Result<()> {
+fn write_span<W: Write>(w: &mut XWikiWriter<W>, content: &Span) -> std::io::Result<()> {
     let mut style_stack = Vec::new();
     for style in content.styles() {
         let delim: &str = match style {
@@ -281,7 +282,7 @@ fn write_text<W: Write>(w: &mut XWikiWriter<W>, content: &Text) -> std::io::Resu
         }
         style_stack.push(delim);
     }
-    write!(w.w, "{}", content.text())?;
+    write_inlines(w, content.inner())?;
     for delim in style_stack.iter().rev() {
         if !delim.is_empty() {
             write!(w.w, "{}", delim)?;

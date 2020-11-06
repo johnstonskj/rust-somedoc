@@ -25,41 +25,119 @@ macro_rules! doc {
 #[macro_export]
 macro_rules! textbf {
     ($s:expr) => {
-        Text::bold($s);
+        Span::bold($s);
     };
 }
 
 #[macro_export]
 macro_rules! textit {
     ($s:expr) => {
-        Text::italic($s);
+        Span::italic($s);
     };
 }
 
 #[macro_export]
 macro_rules! textsl {
     ($s:expr) => {
-        Text::slanted($s);
+        Span::slanted($s);
     };
 }
 
 #[macro_export]
 macro_rules! texttt {
     ($s:expr) => {
-        Text::mono($s);
+        Span::mono($s);
     };
 }
 
 #[macro_export]
 macro_rules! text {
     ($s:expr) => {
-        Text::plain($s);
+        Span::plain($s);
     };
 }
 
 #[macro_export]
 macro_rules! textsc {
     ($s:expr) => {
-        Text::small_caps($s);
+        Span::small_caps($s);
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! inline_impls {
+    ($name:ident) => {
+        impl Into<InlineContent> for $name {
+            fn into(self) -> InlineContent {
+                InlineContent::$name(self)
+            }
+        }
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! block_impls {
+    ($name:ident) => {
+        impl Into<BlockContent> for $name {
+            fn into(self) -> BlockContent {
+                BlockContent::$name(self)
+            }
+        }
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! has_inline_impls {
+    ($name:ident) => {
+        impl ComplexContent<InlineContent> for $name {
+            fn inner(&self) -> &Vec<InlineContent> {
+                &self.inner
+            }
+
+            fn inner_mut(&mut self) -> &mut Vec<InlineContent> {
+                &mut self.inner
+            }
+
+            fn add_content(&mut self, content: InlineContent) -> error::Result<()> {
+                self.inner.push(content);
+                Ok(())
+            }
+        }
+
+        impl HasInlineContent for $name {}
+
+        impl From<InlineContent> for $name {
+            fn from(value: InlineContent) -> Self {
+                let mut new_self = Self::default();
+                new_self.add_content(value).unwrap();
+                new_self
+            }
+        }
+
+        impl From<Vec<InlineContent>> for $name {
+            fn from(value: Vec<InlineContent>) -> Self {
+                let mut new_self = Self::default();
+                let mut value = value;
+                for value in value.drain(..) {
+                    new_self.add_content(value).unwrap();
+                }
+                new_self
+            }
+        }
+
+        impl From<String> for $name {
+            fn from(s: String) -> Self {
+                Self::text_str(&s)
+            }
+        }
+
+        impl From<&str> for $name {
+            fn from(s: &str) -> Self {
+                Self::text_str(s)
+            }
+        }
     };
 }

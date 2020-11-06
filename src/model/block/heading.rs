@@ -8,7 +8,7 @@ More detailed description, with
 */
 
 use crate::error;
-use crate::model::blocks::BlockContent;
+use crate::model::block::BlockContent;
 use crate::model::inline::{HasInlineContent, InlineContent, Text};
 use crate::model::ComplexContent;
 
@@ -67,7 +67,7 @@ impl Heading {
     pub fn new(inner: &str, kind: HeadingKind) -> Self {
         Self {
             kind,
-            inner: vec![Text::new(inner).into()],
+            inner: vec![Text::from(inner).into()],
         }
     }
 

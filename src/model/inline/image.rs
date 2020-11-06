@@ -7,7 +7,7 @@ More detailed description, with
 
 */
 
-use crate::model::blocks::BlockContent;
+use crate::model::block::BlockContent;
 use crate::model::inline::{HyperLink, InlineContent};
 
 // ------------------------------------------------------------------------------------------------

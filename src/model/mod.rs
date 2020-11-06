@@ -64,6 +64,6 @@ pub use document::{Document, DocumentMetadataKind, Metadata};
 
 pub mod inline;
 
-pub mod blocks;
+pub mod block;
 
 pub mod visitor;
