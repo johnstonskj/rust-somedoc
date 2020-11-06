@@ -170,7 +170,7 @@ impl Row {
 
 impl Default for Cell {
     fn default() -> Self {
-        Cell::empty()
+        Cell::skip()
     }
 }
 

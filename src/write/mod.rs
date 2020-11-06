@@ -21,6 +21,7 @@ use std::str::FromStr;
 #[derive(Clone, Debug, PartialEq)]
 pub enum OutputFormat {
     Markdown(MarkdownFlavor),
+    XWiki,
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -31,8 +32,6 @@ pub enum OutputFormat {
 // Public Functions
 // ------------------------------------------------------------------------------------------------
 
-// pub type WriterFn<E, W: Write> = dyn FnOnce(&Document, E, &mut W) -> std::io::Result<()>;
-
 pub fn write_document<W: Write>(
     doc: &Document,
     format: OutputFormat,
@@ -40,6 +39,7 @@ pub fn write_document<W: Write>(
 ) -> std::io::Result<()> {
     match format {
         OutputFormat::Markdown(flavor) => markdown::writer::<MarkdownFlavor, W>(doc, flavor, w),
+        OutputFormat::XWiki => xwiki::writer(doc, w),
     }
 }
 
@@ -71,6 +71,7 @@ impl Display for OutputFormat {
             "{}",
             match self {
                 Self::Markdown(f) => format!("markdown+{}", f),
+                OutputFormat::XWiki => "xwiki".to_string(),
             }
         )
     }
@@ -82,6 +83,7 @@ impl FromStr for OutputFormat {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "md" | "markdown" => Ok(Self::Markdown(Default::default())),
+            "xwiki" => Ok(Self::XWiki),
             _ => Err(error::ErrorKind::UnknownFormat.into()),
         }
     }

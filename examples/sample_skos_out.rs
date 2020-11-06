@@ -7,7 +7,7 @@ use somedoc::model::blocks::{Cell, Column, Heading, Paragraph, Quote, Row, Table
 use somedoc::model::document::Document;
 use somedoc::model::inline::{Anchor, HyperLink, Text};
 use somedoc::write::markdown::MarkdownFlavor;
-use somedoc::write::write_document_to_string;
+use somedoc::write::{write_document_to_string, OutputFormat};
 
 fn main() {
     let mut doc = Document::default();
@@ -68,4 +68,7 @@ fn main() {
 
     let md = write_document_to_string(&doc, MarkdownFlavor::default().into()).unwrap();
     println!("{}", md);
+
+    let xw = write_document_to_string(&doc, OutputFormat::XWiki).unwrap();
+    println!("{}", xw);
 }

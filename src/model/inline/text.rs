@@ -28,6 +28,8 @@ pub enum TextStyle {
     Strikethrough,
     Underline,
     SmallCaps,
+    Superscript,
+    Subscript,
 }
 
 #[derive(Clone, Debug)]
@@ -153,6 +155,14 @@ impl Text {
 
     pub fn small_caps(inner: &str) -> Self {
         Self::new_with_style(inner, TextStyle::SmallCaps)
+    }
+
+    pub fn superscript(inner: &str) -> Self {
+        Self::new_with_style(inner, TextStyle::Superscript)
+    }
+
+    pub fn subscript(inner: &str) -> Self {
+        Self::new_with_style(inner, TextStyle::Subscript)
     }
 
     // --------------------------------------------------------------------------------------------

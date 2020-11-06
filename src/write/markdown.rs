@@ -522,6 +522,8 @@ fn write_text<W: Write>(w: &mut MarkdownWriter<W>, content: &Text) -> std::io::R
             }
             TextStyle::Underline => "",
             TextStyle::SmallCaps => "",
+            TextStyle::Superscript => "",
+            TextStyle::Subscript => "",
         };
         write!(w.w, "{}", delim)?;
         style_stack.push(delim);
