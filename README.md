@@ -10,9 +10,15 @@ A very simple document model and markup generator.
 ![Audit](https://github.com/johnstonskj/rust-somedoc/workflows/Security%20audit/badge.svg)
 [![GitHub stars](https://img.shields.io/github/stars/johnstonskj/rust-somedoc.svg)](https://github.com/johnstonskj/rust-somedoc/stargazers)
 
+-----------
+
 ## Model
 
 TBD.
+
+## Writers
+
+TBD
 
 ## Example
 
