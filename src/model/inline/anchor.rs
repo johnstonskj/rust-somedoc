@@ -50,6 +50,14 @@ impl Anchor {
     pub fn to_ref(&self) -> HyperLink {
         HyperLink::internal(self.clone())
     }
+
+    pub fn inner(&self) -> &String {
+        &self.0
+    }
+
+    pub fn into_inner(self) -> String {
+        self.0
+    }
 }
 
 // ------------------------------------------------------------------------------------------------

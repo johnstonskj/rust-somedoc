@@ -264,7 +264,7 @@ fn write_inlines<W: Write>(
     for item in content {
         match item {
             InlineContent::HyperLink(value) => write_link(w, value)?,
-            InlineContent::Anchor(_) => {}
+            InlineContent::Anchor(value) => write!(w.w, "(% id=\"{}\" %)", value.inner())?,
             InlineContent::Image(image) => write_image(w, image, true)?,
             InlineContent::Text(value) => write!(w.w, "{}", value.inner())?,
             InlineContent::Character(value) => write_character(w, value)?,
@@ -329,7 +329,11 @@ fn write_link<W: Write>(w: &mut XWikiWriter<W>, content: &HyperLink) -> std::io:
     }
     match content.target() {
         HyperLinkTarget::External(value) => write!(w.w, "{}]]", value)?,
-        HyperLinkTarget::Internal(value) => write!(w.w, ".||anchor={}]]", value)?,
+        HyperLinkTarget::Internal(value) => write!(
+            w.w,
+            ".||anchor=H{}]]",
+            value.inner().trim().replace(" ", "")
+        )?,
     }
     Ok(())
 }

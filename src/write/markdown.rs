@@ -574,7 +574,16 @@ fn write_link<W: Write>(w: &mut MarkdownWriter<W>, content: &HyperLink) -> std::
     }
     match content.target() {
         HyperLinkTarget::External(value) => write!(w.w, "{}", value)?,
-        HyperLinkTarget::Internal(value) => write!(w.w, "#{}", value)?,
+        HyperLinkTarget::Internal(value) => write!(
+            w.w,
+            "#{}",
+            value
+                .inner()
+                .to_lowercase()
+                .trim()
+                .replace(" ", "-")
+                .replace(&['(', ')', ',', '\"', '.', ';', ':', '\''][..], "")
+        )?,
     }
     if let Some(_) = content.alt_text() {
         if let Some(title) = content.title() {

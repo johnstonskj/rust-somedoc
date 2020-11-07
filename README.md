@@ -28,6 +28,10 @@ TBD
 
 ## Changes
 
+**Version 0.1.4**
+
+* Moved the rules for formatting an `Anchor` into each writer. 
+
 **Version 0.1.3**
 
 * Added `Formatted` alongside `CodeBlock`.
