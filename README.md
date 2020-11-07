@@ -28,6 +28,13 @@ TBD
 
 ## Changes
 
+**Version 0.1.1**
+
+* Added [cargo-husky](https://github.com/rhysd/cargo-husky) for git hooks.
+* Fixed bug in tables for XWiki.
+
 **Version 0.1.0**
+
+* Initial commit. Basic model working, initial markdown and xwiki writers.
 
 ## TODO

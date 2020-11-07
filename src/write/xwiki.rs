@@ -210,20 +210,21 @@ fn write_table<W: Write>(w: &mut XWikiWriter<W>, content: &Table) -> std::io::Re
     debug!("xwiki::write_table({:?})", content);
     if !content.columns().is_empty() {
         writeln!(w.w, "(% border=\"1\" %)")?;
+        write_quote_prefix(w)?;
         for column in content.columns() {
             write!(w.w, "|={}", column.label())?;
         }
+        writeln!(w.w)?;
 
         for row in content.rows() {
             write_quote_prefix(w)?;
             for cell in row.cells() {
+                write!(w.w, "|")?;
                 if cell.has_inner() {
-                    write!(w.w, "|")?;
                     write_inlines(w, cell.inner())?;
-                } else {
-                    write!(w.w, "|")?;
                 }
             }
+            writeln!(w.w)?;
         }
     }
     Ok(())
