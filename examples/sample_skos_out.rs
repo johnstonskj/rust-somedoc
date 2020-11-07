@@ -1,6 +1,8 @@
-use somedoc::model::block::{Cell, Column, HasBlockContent, Heading, Paragraph, Quote, Row, Table};
+use somedoc::model::block::{
+    Cell, Column, HasBlockContent, Heading, List, Paragraph, Quote, Row, Table,
+};
 use somedoc::model::document::Document;
-use somedoc::model::inline::{Anchor, HasInlineContent, HyperLink};
+use somedoc::model::inline::{Anchor, HasInlineContent, HyperLink, Span, Text};
 use somedoc::write::markdown::MarkdownFlavor;
 use somedoc::write::{write_document_to_string, OutputFormat};
 
@@ -60,6 +62,18 @@ fn main() {
     doc.add_thematic_break();
 
     doc.add_heading(Heading::heading_2("Concept Hierarchy"));
+
+    let mut top_list = List::default();
+    top_list.add_item_from(Span::bold_str("First item").into());
+    top_list.add_item_from(Text::from("Second item").into());
+
+    let mut inner_list = List::default();
+    inner_list.add_item_from(Span::italic_str("Third item").into());
+    top_list.add_sub_list(inner_list);
+
+    top_list.add_item_from(Text::from("First item").into());
+
+    doc.add_list(top_list);
 
     let md = write_document_to_string(&doc, MarkdownFlavor::default().into()).unwrap();
     println!("{}", md);

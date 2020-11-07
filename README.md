@@ -28,6 +28,10 @@ TBD
 
 ## Changes
 
+**Version 0.1.2**
+
+* Fixed nested list bug in XWiki
+
 **Version 0.1.1**
 
 * Added [cargo-husky](https://github.com/rhysd/cargo-husky) for git hooks.

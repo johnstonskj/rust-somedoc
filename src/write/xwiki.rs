@@ -138,16 +138,16 @@ fn write_list<W: Write>(
             ListItem::Item(item) => {
                 write_quote_prefix(w)?;
                 if content.is_ordered() {
-                    for _ in 0..indent {
-                        write!(w.w, "*")?;
-                    }
-                    write!(w.w, " ")?;
-                } else {
-                    for _ in 0..indent {
+                    for _ in 0..indent + 1 {
                         write!(w.w, "1")?;
                     }
-                    write!(w.w, ". ")?;
+                    write!(w.w, ".")?;
+                } else {
+                    for _ in 0..indent + 1 {
+                        write!(w.w, "*")?;
+                    }
                 }
+                write!(w.w, " ")?;
                 write_inlines(w, item.inner())?;
                 writeln!(w.w)?;
             }
