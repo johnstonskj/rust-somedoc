@@ -9,8 +9,8 @@ More detailed description, with
 
 use crate::model::block::quote::Quote;
 use crate::model::block::{
-    BlockContent, CodeBlock, DefinitionList, DefinitionListItem, Heading, HeadingKind, List,
-    ListItem, Paragraph, Table,
+    BlockContent, CodeBlock, DefinitionList, DefinitionListItem, Formatted, Heading, HeadingKind,
+    List, ListItem, Paragraph, Table,
 };
 use crate::model::inline::{
     Character, HyperLink, HyperLinkTarget, Image, InlineContent, Span, TextStyle,
@@ -76,16 +76,16 @@ fn write_blocks<W: Write>(
             BlockContent::Image(content) => write_image(w, content, false),
             BlockContent::List(content) => write_list(w, content, 0),
             BlockContent::DefinitionList(content) => write_definition_list(w, content),
+            BlockContent::Formatted(content) => write_formatted(w, content),
             BlockContent::CodeBlock(content) => write_code_block(w, content),
             BlockContent::Paragraph(content) => write_paragraph(w, content),
             BlockContent::Quote(content) => write_quote(w, content),
             BlockContent::Table(content) => write_table(w, content),
-            BlockContent::ThematicBreak => writeln!(w.w, "-----"),
+            BlockContent::ThematicBreak => writeln!(w.w, "-----\n"),
         }?;
         if idx < count - 1 {
             write_quote_prefix(w)?;
         }
-        writeln!(w.w)?;
     }
     Ok(())
 }
@@ -107,6 +107,7 @@ fn write_heading<W: Write>(w: &mut XWikiWriter<W>, content: &Heading) -> std::io
     for _ in 0..depth {
         write!(w.w, "=")?;
     }
+    writeln!(w.w)?;
     writeln!(w.w)
 }
 
@@ -119,6 +120,7 @@ fn write_image<W: Write>(
     write!(w.w, "image:")?;
     write_link(w, content.link())?;
     if !inline {
+        writeln!(w.w)?;
         writeln!(w.w)?;
     }
     Ok(())
@@ -152,6 +154,9 @@ fn write_list<W: Write>(
                 writeln!(w.w)?;
             }
         }
+    }
+    if indent == 0 {
+        writeln!(w.w)?;
     }
     Ok(())
 }
@@ -195,6 +200,7 @@ fn write_quote_prefix<W: Write>(w: &mut XWikiWriter<W>) -> std::io::Result<()> {
 fn write_paragraph<W: Write>(w: &mut XWikiWriter<W>, content: &Paragraph) -> std::io::Result<()> {
     debug!("xwiki::write_paragraph({:?})", content);
     write_inlines(w, content.inner())?;
+    writeln!(w.w)?;
     writeln!(w.w)
 }
 
@@ -227,7 +233,15 @@ fn write_table<W: Write>(w: &mut XWikiWriter<W>, content: &Table) -> std::io::Re
             writeln!(w.w)?;
         }
     }
-    Ok(())
+    writeln!(w.w)
+}
+
+fn write_formatted<W: Write>(w: &mut XWikiWriter<W>, content: &Formatted) -> std::io::Result<()> {
+    debug!("xwiki::write_formatted({:?})", content);
+    writeln!(w.w, "{{{{{{")?;
+    writeln!(w.w, "{}", content.inner())?;
+    writeln!(w.w, "}}}}}}")?;
+    writeln!(w.w)
 }
 
 fn write_code_block<W: Write>(w: &mut XWikiWriter<W>, content: &CodeBlock) -> std::io::Result<()> {

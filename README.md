@@ -28,6 +28,11 @@ TBD
 
 ## Changes
 
+**Version 0.1.3**
+
+* Added `Formatted` alongside `CodeBlock`.
+* Removed some additional blank lines from both Markdown and XWiki writers.
+
 **Version 0.1.2**
 
 * Fixed nested list bug in XWiki

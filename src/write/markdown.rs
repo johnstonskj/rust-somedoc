@@ -11,8 +11,8 @@ use crate::error;
 use crate::model::block::quote::Quote;
 use crate::model::block::table::Alignment;
 use crate::model::block::{
-    BlockContent, CodeBlock, DefinitionList, DefinitionListItem, Heading, HeadingKind, List,
-    ListItem, Paragraph, Table,
+    BlockContent, CodeBlock, DefinitionList, DefinitionListItem, Formatted, Heading, HeadingKind,
+    List, ListItem, Paragraph, Table,
 };
 use crate::model::inline::{
     Character, HyperLink, HyperLinkTarget, Image, InlineContent, Span, TextStyle,
@@ -292,15 +292,15 @@ fn write_blocks<W: Write>(
                 }
             }
             BlockContent::CodeBlock(content) => write_code_block(w, content),
+            BlockContent::Formatted(content) => write_formatted(w, content),
             BlockContent::Paragraph(content) => write_paragraph(w, content),
             BlockContent::Quote(content) => write_quote(w, content),
             BlockContent::Table(content) => write_table(w, content),
-            BlockContent::ThematicBreak => writeln!(w.w, "{}", THEMATIC_BREAK),
+            BlockContent::ThematicBreak => writeln!(w.w, "{}\n", THEMATIC_BREAK),
         }?;
         if idx < count - 1 {
             write_quote_prefix(w)?;
         }
-        writeln!(w.w)?;
     }
     Ok(())
 }
@@ -318,6 +318,7 @@ fn write_heading<W: Write>(w: &mut MarkdownWriter<W>, content: &Heading) -> std:
     }
     write!(w.w, " ")?;
     write_inlines(w, content.inner())?;
+    writeln!(w.w)?;
     writeln!(w.w)
 }
 
@@ -330,6 +331,7 @@ fn write_image<W: Write>(
     write!(w.w, "!")?;
     write_link(w, content.link())?;
     if !inline {
+        writeln!(w.w)?;
         writeln!(w.w)?;
     }
     Ok(())
@@ -363,6 +365,9 @@ fn write_list<W: Write>(
                 writeln!(w.w)?;
             }
         }
+    }
+    if indent == 0 {
+        writeln!(w.w)?;
     }
     Ok(())
 }
@@ -405,6 +410,7 @@ fn write_paragraph<W: Write>(
 ) -> std::io::Result<()> {
     debug!("markdown::write_paragraph({:?})", content);
     write_inlines(w, content.inner())?;
+    writeln!(w.w)?;
     writeln!(w.w)
 }
 
@@ -451,7 +457,18 @@ fn write_table<W: Write>(w: &mut MarkdownWriter<W>, content: &Table) -> std::io:
             writeln!(w.w, "{}", TABLE_PIPE)?;
         }
     }
-    Ok(())
+    writeln!(w.w)
+}
+
+fn write_formatted<W: Write>(
+    w: &mut MarkdownWriter<W>,
+    content: &Formatted,
+) -> std::io::Result<()> {
+    debug!("markdown::write_formatted({:?})", content);
+    for line in content.inner().split('\n') {
+        writeln!(w.w, "{}{}", CODE_INDENT, line)?;
+    }
+    writeln!(w.w)
 }
 
 fn write_code_block<W: Write>(

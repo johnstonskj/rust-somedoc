@@ -21,6 +21,7 @@ pub enum BlockContent {
     Image(Image),
     List(List),
     DefinitionList(DefinitionList),
+    Formatted(Formatted),
     CodeBlock(CodeBlock),
     Paragraph(Paragraph),
     Quote(Quote),
@@ -53,7 +54,13 @@ pub trait HasBlockContent: Default + ComplexContent<BlockContent> {
         new_self
     }
 
-    fn listing(inner: CodeBlock) -> Self {
+    fn formatted(inner: Formatted) -> Self {
+        let mut new_self = Self::default();
+        new_self.add_formatted(inner);
+        new_self
+    }
+
+    fn code_block(inner: CodeBlock) -> Self {
         let mut new_self = Self::default();
         new_self.add_code_block(inner);
         new_self
@@ -99,6 +106,10 @@ pub trait HasBlockContent: Default + ComplexContent<BlockContent> {
         self.add_content(inner.into()).unwrap()
     }
 
+    fn add_formatted(&mut self, inner: Formatted) {
+        self.add_content(inner.into()).unwrap()
+    }
+
     fn add_code_block(&mut self, inner: CodeBlock) {
         self.add_content(inner.into()).unwrap()
     }
@@ -141,7 +152,7 @@ pub trait HasBlockContent: Default + ComplexContent<BlockContent> {
 // ------------------------------------------------------------------------------------------------
 
 pub mod code;
-pub use code::CodeBlock;
+pub use code::{CodeBlock, Formatted};
 
 pub mod heading;
 pub use heading::{Heading, HeadingKind};

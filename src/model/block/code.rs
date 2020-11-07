@@ -7,13 +7,14 @@ More detailed description, with
 
 */
 
-// use ...
+use crate::model::block::BlockContent;
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
 // ------------------------------------------------------------------------------------------------
 
-use crate::model::block::BlockContent;
+#[derive(Clone, Debug)]
+pub struct Formatted(String);
 
 #[derive(Clone, Debug)]
 pub struct CodeBlock {
@@ -33,20 +34,38 @@ pub struct CodeBlock {
 // Implementations
 // ------------------------------------------------------------------------------------------------
 
+block_impls!(Formatted);
+
+impl Formatted {
+    pub fn new(text: &str) -> Self {
+        Self(text.to_string())
+    }
+
+    pub fn inner(&self) -> &String {
+        &self.0
+    }
+
+    pub fn into_inner(self) -> String {
+        self.0
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
+
 block_impls!(CodeBlock);
 
 impl CodeBlock {
-    pub fn new(code: String) -> Self {
+    pub fn new(code: &str) -> Self {
         Self {
-            code,
+            code: code.to_string(),
             language: None,
         }
     }
 
-    pub fn new_with_language(code: String, language: String) -> Self {
+    pub fn new_with_language(code: &str, language: &str) -> Self {
         Self {
-            code,
-            language: Some(language),
+            code: code.to_string(),
+            language: Some(language.to_string()),
         }
     }
 

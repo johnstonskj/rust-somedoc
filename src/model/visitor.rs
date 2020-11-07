@@ -9,7 +9,7 @@ More detailed description, with
 
 use crate::model::block::quote::Quote;
 use crate::model::block::{
-    BlockContent, CodeBlock, DefinitionList, Heading, List, Paragraph, Table,
+    BlockContent, CodeBlock, DefinitionList, Formatted, Heading, List, Paragraph, Table,
 };
 use crate::model::document::{Document, Metadata};
 use crate::model::inline::{Anchor, HyperLink, Image, Text};
@@ -65,6 +65,11 @@ pub trait BlockContentVisitor {
 
     #[allow(unused_variables)]
     fn definition_list(&self, value: &DefinitionList) -> bool {
+        true
+    }
+
+    #[allow(unused_variables)]
+    fn formatted(&self, code: &Formatted) -> bool {
         true
     }
 
@@ -143,6 +148,7 @@ fn visit_blocks(content: &Vec<BlockContent>, visitor: Box<&dyn BlockContentVisit
             BlockContent::Image(value) => visitor.image(value),
             BlockContent::List(value) => visitor.list(value),
             BlockContent::DefinitionList(value) => visitor.definition_list(value),
+            BlockContent::Formatted(value) => visitor.formatted(value),
             BlockContent::CodeBlock(value) => visitor.code_block(value),
             BlockContent::Paragraph(value) => visitor.paragraph(value),
             BlockContent::Quote(value) => visitor.block_quote(value),
