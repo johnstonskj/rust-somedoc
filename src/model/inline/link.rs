@@ -23,7 +23,6 @@ pub enum HyperLinkTarget {
 pub struct HyperLink {
     target: HyperLinkTarget,
     alt_text: Option<Span>,
-    title: Option<String>,
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -48,42 +47,40 @@ impl From<Anchor> for HyperLink {
 
 impl HyperLink {
     pub fn external(target: &str) -> Self {
-        Self::new_external(target, None, None)
+        Self::new_external(target, None)
     }
 
-    pub fn external_with_label(target: &str, alt_text: &str) -> Self {
-        Self::new_external(target, Some(alt_text), None)
+    pub fn external_with_label(target: &str, alt_text: Span) -> Self {
+        Self::new_external(target, Some(alt_text))
     }
 
-    pub fn external_with_label_and_title(target: &str, alt_text: &str, title: &str) -> Self {
-        Self::new_external(target, Some(alt_text), Some(title))
+    pub fn external_with_label_str(target: &str, alt_text: &str) -> Self {
+        Self::new_external(target, Some(Span::plain_str(alt_text)))
     }
 
     pub fn internal(target: Anchor) -> Self {
-        Self::new_internal(target, None, None)
+        Self::new_internal(target, None)
     }
 
-    pub fn internal_with_label(target: Anchor, alt_text: &str) -> Self {
-        Self::new_internal(target, Some(alt_text), None)
+    pub fn internal_with_label(target: Anchor, alt_text: Span) -> Self {
+        Self::new_internal(target, Some(alt_text))
     }
 
-    pub fn internal_with_label_and_title(target: Anchor, alt_text: &str, title: &str) -> Self {
-        Self::new_internal(target, Some(alt_text), Some(title))
+    pub fn internal_with_label_str(target: Anchor, alt_text: &str) -> Self {
+        Self::new_internal(target, Some(Span::plain_str(alt_text)))
     }
 
-    fn new_external(target: &str, alt_text: Option<&str>, title: Option<&str>) -> Self {
+    fn new_external(target: &str, alt_text: Option<Span>) -> Self {
         Self {
             target: HyperLinkTarget::External(target.to_string()),
-            alt_text: alt_text.map(Span::plain_str),
-            title: title.map(str::to_string),
+            alt_text,
         }
     }
 
-    fn new_internal(target: Anchor, alt_text: Option<&str>, title: Option<&str>) -> Self {
+    fn new_internal(target: Anchor, alt_text: Option<Span>) -> Self {
         Self {
             target: HyperLinkTarget::Internal(target),
-            alt_text: alt_text.map(Span::plain_str),
-            title: title.map(str::to_string),
+            alt_text,
         }
     }
 
@@ -115,14 +112,6 @@ impl HyperLink {
 
     pub fn alt_text(&self) -> &Option<Span> {
         &self.alt_text
-    }
-
-    pub fn has_title(&self) -> bool {
-        self.title.is_some()
-    }
-
-    pub fn title(&self) -> &Option<String> {
-        &self.title
     }
 }
 

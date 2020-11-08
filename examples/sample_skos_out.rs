@@ -37,22 +37,22 @@ fn main() {
     doc.add_thematic_break();
     let mut links = Paragraph::default();
     links.add_text_str("Jump to: ");
-    links.add_link(HyperLink::internal_with_label(
+    links.add_link(HyperLink::internal_with_label_str(
         Anchor::new("Concepts Hierarchy").unwrap(),
         "Concepts Hierarchy",
     ));
     links.add_text_str(" | ");
-    links.add_link(HyperLink::internal_with_label(
+    links.add_link(HyperLink::internal_with_label_str(
         Anchor::new("Concepts").unwrap(),
         "Concepts",
     ));
     links.add_text_str(" | ");
-    links.add_link(HyperLink::internal_with_label(
+    links.add_link(HyperLink::internal_with_label_str(
         Anchor::new("Collections").unwrap(),
         "Collections",
     ));
     links.add_text_str(" | ");
-    links.add_link(HyperLink::internal_with_label(
+    links.add_link(HyperLink::internal_with_label_str(
         Anchor::new("Appendix - RDF").unwrap(),
         "Appendix - RDF",
     ));

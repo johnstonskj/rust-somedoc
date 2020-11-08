@@ -588,9 +588,6 @@ fn write_link<W: Write>(w: &mut MarkdownWriter<W>, content: &HyperLink) -> std::
         )?,
     }
     if let Some(_) = content.alt_text() {
-        if let Some(title) = content.title() {
-            write!(w.w, " {:?}", title)?;
-        }
         write!(w.w, ")")?;
     } else {
         write!(w.w, ">")?;
