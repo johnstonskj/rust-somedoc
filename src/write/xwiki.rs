@@ -332,7 +332,12 @@ fn write_link<W: Write>(w: &mut XWikiWriter<W>, content: &HyperLink) -> std::io:
         HyperLinkTarget::Internal(value) => write!(
             w.w,
             ".||anchor=H{}]]",
-            value.inner().trim().replace(" ", "")
+            value
+                .inner()
+                .trim()
+                .replace(" ", "")
+                .replace("(", "28")
+                .replace(")", "29")
         )?,
     }
     Ok(())
