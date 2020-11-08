@@ -88,6 +88,8 @@ pub trait HasInlineContent: Default + ComplexContent<InlineContent> {
         new_self
     }
 
+    // --------------------------------------------------------------------------------------------
+
     fn add_anchor(&mut self, inner: Anchor) {
         self.add_content(inner.into()).unwrap()
     }
@@ -120,6 +122,8 @@ pub trait HasInlineContent: Default + ComplexContent<InlineContent> {
     fn add_span(&mut self, inner: Span) {
         self.add_content(InlineContent::Span(inner.into())).unwrap()
     }
+
+    // --------------------------------------------------------------------------------------------
 
     fn plain(inner: InlineContent) -> Self {
         Self::span(Span::new_inner_with_style(inner, TextStyle::Plain))
@@ -224,6 +228,14 @@ pub trait HasInlineContent: Default + ComplexContent<InlineContent> {
     fn subscript_str(inner: &str) -> Self {
         Self::span(Span::new_with_style(inner, TextStyle::Subscript))
     }
+
+    // --------------------------------------------------------------------------------------------
+
+    fn unformatted_string(&self) -> String {
+        let mut s = String::new();
+        unformat(&mut s, self.inner());
+        s
+    }
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -241,6 +253,31 @@ pub trait HasInlineContent: Default + ComplexContent<InlineContent> {
 // ------------------------------------------------------------------------------------------------
 // Private Functions
 // ------------------------------------------------------------------------------------------------
+
+fn unformat(s: &mut String, content: &Vec<InlineContent>) -> String {
+    for item in content {
+        match item {
+            // TODO: all local refs need alt text.
+            InlineContent::Text(value) => s.push_str(value.inner()),
+            InlineContent::Character(value) => match value {
+                Character::Space => s.push(' '),
+                Character::NonBreakSpace => s.push(' '),
+                Character::Hyphen => s.push('-'),
+                Character::EmDash => s.push_str("---"),
+                Character::EnDash => s.push_str("--"),
+                Character::Emoji(e) => s.push_str(e.name()),
+                Character::Other(c) => s.push(*c),
+            },
+            InlineContent::LineBreak => s.push('\n'),
+            InlineContent::Span(value) => {
+                let s2 = unformat(s, value.inner());
+                s.push_str(&s2)
+            }
+            _ => {}
+        }
+    }
+    s.clone()
+}
 
 // ------------------------------------------------------------------------------------------------
 // Modules
