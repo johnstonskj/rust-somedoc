@@ -7,8 +7,7 @@ More detailed description, with
 
 */
 
-use crate::model::inline::anchor::Anchor;
-use crate::model::inline::InlineContent;
+use crate::model::inline::{Anchor, HasInlineContent, InlineContent, Span};
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
@@ -23,7 +22,7 @@ pub enum HyperLinkTarget {
 #[derive(Clone, Debug)]
 pub struct HyperLink {
     target: HyperLinkTarget,
-    alt_text: Option<String>,
+    alt_text: Option<Span>,
     title: Option<String>,
 }
 
@@ -40,18 +39,6 @@ pub struct HyperLink {
 // ------------------------------------------------------------------------------------------------
 
 inline_impls!(HyperLink);
-
-impl From<String> for HyperLink {
-    fn from(s: String) -> Self {
-        Self::external(&s)
-    }
-}
-
-impl From<&str> for HyperLink {
-    fn from(s: &str) -> Self {
-        Self::external(s)
-    }
-}
 
 impl From<Anchor> for HyperLink {
     fn from(a: Anchor) -> Self {
@@ -87,7 +74,7 @@ impl HyperLink {
     fn new_external(target: &str, alt_text: Option<&str>, title: Option<&str>) -> Self {
         Self {
             target: HyperLinkTarget::External(target.to_string()),
-            alt_text: alt_text.map(str::to_string),
+            alt_text: alt_text.map(Span::plain_str),
             title: title.map(str::to_string),
         }
     }
@@ -95,7 +82,7 @@ impl HyperLink {
     fn new_internal(target: Anchor, alt_text: Option<&str>, title: Option<&str>) -> Self {
         Self {
             target: HyperLinkTarget::Internal(target),
-            alt_text: alt_text.map(str::to_string),
+            alt_text: alt_text.map(Span::plain_str),
             title: title.map(str::to_string),
         }
     }
@@ -116,6 +103,8 @@ impl HyperLink {
         }
     }
 
+    // --------------------------------------------------------------------------------------------
+
     pub fn target(&self) -> &HyperLinkTarget {
         &self.target
     }
@@ -124,7 +113,7 @@ impl HyperLink {
         self.alt_text.is_some()
     }
 
-    pub fn alt_text(&self) -> &Option<String> {
+    pub fn alt_text(&self) -> &Option<Span> {
         &self.alt_text
     }
 
@@ -144,3 +133,15 @@ impl HyperLink {
 // ------------------------------------------------------------------------------------------------
 // Modules
 // ------------------------------------------------------------------------------------------------
+
+// ------------------------------------------------------------------------------------------------
+// Unit Tests
+// ------------------------------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_simple() {}
+}

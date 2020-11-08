@@ -325,7 +325,8 @@ fn write_character<W: Write>(w: &mut XWikiWriter<W>, content: &Character) -> std
 fn write_link<W: Write>(w: &mut XWikiWriter<W>, content: &HyperLink) -> std::io::Result<()> {
     write!(w.w, "[[")?;
     if let Some(alt_text) = content.alt_text() {
-        write!(w.w, "{}>>", alt_text)?;
+        write_inlines(w, alt_text.inner())?;
+        write!(w.w, ">>")?;
     }
     match content.target() {
         HyperLinkTarget::External(value) => write!(w.w, "{}]]", value)?,

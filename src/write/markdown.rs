@@ -567,8 +567,10 @@ fn write_character<W: Write>(
 }
 
 fn write_link<W: Write>(w: &mut MarkdownWriter<W>, content: &HyperLink) -> std::io::Result<()> {
-    if let Some(alt_text) = content.alt_text() {
-        write!(w.w, "[{}](", alt_text)?;
+    if let Some(alt_text) = &content.alt_text() {
+        write!(w.w, "[")?;
+        write_inlines(w, alt_text.inner())?;
+        write!(w.w, "](")?;
     } else {
         write!(w.w, "<")?;
     }
