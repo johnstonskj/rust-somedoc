@@ -324,7 +324,7 @@ fn unformat(s: &mut String, content: &Vec<InlineContent>) -> String {
                 Character::Hyphen => s.push('-'),
                 Character::EmDash => s.push_str("---"),
                 Character::EnDash => s.push_str("--"),
-                Character::Emoji(e) => s.push_str(e.name()),
+                Character::Emoji(e) => s.push_str(e.inner()),
                 Character::Other(c) => s.push(*c),
             },
             InlineContent::LineBreak => s.push('\n'),
@@ -344,7 +344,11 @@ fn unformat(s: &mut String, content: &Vec<InlineContent>) -> String {
 
 #[doc(hidden)]
 pub mod character;
-pub use character::Character;
+pub use character::{Character, Emoji};
+
+#[cfg(feature = "emoji_names")]
+#[allow(missing_docs)]
+pub mod emoji_names;
 
 #[doc(hidden)]
 pub mod anchor;

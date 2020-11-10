@@ -1,5 +1,6 @@
 use crate::error;
 use crate::model::inline::InlineContent;
+use regex::Regex;
 use std::str::FromStr;
 
 // ------------------------------------------------------------------------------------------------
@@ -30,6 +31,10 @@ pub enum Character {
 // Implementations
 // ------------------------------------------------------------------------------------------------
 
+lazy_static! {
+    static ref EMOJI_RE: Regex = Regex::new(r"(^:[a-zA-Z0-9_\-]+:$)|(^[a-zA-Z0-9_\-]+$)").unwrap();
+}
+
 impl FromStr for Emoji {
     type Err = error::Error;
 
@@ -40,15 +45,27 @@ impl FromStr for Emoji {
 
 impl Emoji {
     pub fn new(s: &str) -> error::Result<Self> {
-        if s.chars().all(char::is_alphabetic) {
-            Ok(Self(s.to_string()))
+        if !s.is_empty() {
+            if EMOJI_RE.is_match(s) {
+                if s.starts_with(':') && s.ends_with(':') {
+                    Ok(Self(s.to_string()))
+                } else {
+                    Ok(Self(format!(":{}:", s)))
+                }
+            } else {
+                Err(error::ErrorKind::IllegalCharacter.into())
+            }
         } else {
-            Err(error::ErrorKind::IllegalCharacter.into())
+            Err(error::ErrorKind::MustNotBeEmpty.into())
         }
     }
 
-    pub fn name(&self) -> &String {
+    pub fn inner(&self) -> &String {
         &self.0
+    }
+
+    pub fn into_inner(self) -> String {
+        self.0
     }
 }
 

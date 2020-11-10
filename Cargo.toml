@@ -10,6 +10,9 @@ license = "MIT"
 readme = "README.md"
 publish = true
 
+[features]
+emoji_names = []
+
 [package.metadata.docs.rs]
 # This sets the default target to `x86_64-unknown-linux-gnu`
 # and only builds that target for documentation.
@@ -17,7 +20,12 @@ targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
 error-chain = "0.12.2"
+lazy_static = "1.4.0"
 log = "0.4.11"
+regex = "1.4.2"
+
+[dev-dependencies]
+proptest = "0.10.1"
 
 [dev-dependencies.cargo-husky]
 version = "1"

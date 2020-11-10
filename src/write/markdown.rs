@@ -754,7 +754,7 @@ fn write_character<W: Write>(
             Character::Hyphen => "-".to_string(),
             Character::EmDash => "---".to_string(),
             Character::EnDash => "--".to_string(),
-            Character::Emoji(name) => format!(":{}:", name.name()),
+            Character::Emoji(name) => format!(":{}:", name.inner()),
             Character::Other(c) => c.to_string(),
         }
     )

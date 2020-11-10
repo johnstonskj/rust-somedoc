@@ -108,10 +108,18 @@
 * println!("{}", doc_str);
 * ```
 *
+* ## Features
+*
+* * **emoji_names**; adds a new module `emoji_names` to `model::inline` which only contains string
+*   constants for commonly supported emoji names. These can then be used to construct `Emoji` values
+*   for inline characters. This feature is not included by default.
 */
 
 #[macro_use]
 extern crate error_chain;
+
+#[macro_use]
+extern crate lazy_static;
 
 #[macro_use]
 extern crate log;
