@@ -115,11 +115,11 @@ println!("{}", doc_str);
 * Renamed `TextStyle` -> `SpanStyle`, added `Sized` variant.
 * Removed the `read` module as it was currently empty.
 * Removed the `model::visitor` module, too many changes to stabilize yet.
-* Fixed bug in XWiki `write_code` function.
+* Fixed a bug in XWiki `write_code` function.
 * Added `model::inline::emoji_names` module, but only enabled for `emoji_names` feature.
 * Adding test cases.
 
-**Version 0.1.5**
+**Version 0.1.5 (not published)**
 
 * Added some more replacement rules for XWiki anchors. 
 
