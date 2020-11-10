@@ -1,9 +1,46 @@
 /*!
-One-line description.
+Provides the functions, and format types, to serialize a [`Document`](../model/document/struct.Document.html)
+in supported markup formats.
 
-More detailed description, with
+The enum [`OutputFormat`](enum.OutputFormat.html) provides a set of implemented formatters that may
+then be used in [`write_document`](fn.write_document.html) and
+[`write_document_to_string`](fn.write_document_to_string.html).
 
 # Example
+
+```rust
+# use somedoc::model::Document;
+use somedoc::write::{write_document_to_string, OutputFormat};
+
+# fn make_some_document() -> Document { Document::default() }
+let doc = make_some_document();
+
+let doc_str = write_document_to_string(&doc, OutputFormat::XWiki).unwrap();
+println!("{}", doc_str);
+```
+
+# Writer Implementation
+
+Each writer module provides a single function that is called by `write_document` and is passed the
+document and the `Write` implementation. While the following types are **not** used in this module
+they are useful in understanding the two writer types.
+
+```rust
+use std::io::Write;
+use somedoc::model::document::Document;
+
+type WriterFn<W: Write> = dyn Fn(&Document, &mut W) -> std::io::Result<()>;
+
+type FlavoredWriterFn<E: Default, W: Write> =
+        dyn Fn(&Document, E, &mut W) -> std::io::Result<()>;
+```
+
+The function type `WriterFn` is the primary case where the document and writer are passed in.
+However, some formats such as Markdown have multiple *flavors* that the caller may wish to select
+from. The secont type above, `FlavoredWriterFn` takes an additional parameter that denotes the
+flavor. In the type [`OutputFormat`](enum.OutputFormat.html) you can see that the `Markdown`
+variant includes the flavor, and this will be the concrete value for `E` when calling the
+markdown implementation of `FlavoredWriterFn`.
 
 */
 
@@ -18,34 +55,49 @@ use std::str::FromStr;
 // Public Types
 // ------------------------------------------------------------------------------------------------
 
+///
+/// This indicates the output format to use when writing a document.
+///
 #[derive(Clone, Debug, PartialEq)]
 pub enum OutputFormat {
+    /// One of the supported flavors of Markdown, see [`markdown::MarkdownFlavor`](markdown/enum.MarkdownFlavor.html).
     Markdown(MarkdownFlavor),
+
+    // The XWiki native syntax.
     XWiki,
 }
 
-// ------------------------------------------------------------------------------------------------
-// Private Types
-// ------------------------------------------------------------------------------------------------
+// type WriterFn<W: Write> = dyn Fn(&Document, &mut W) -> std::io::Result<()>;
+//
+// type FlavoredWriterFn<E: Default, W: Write> = dyn Fn(&Document, E, &mut W) -> std::io::Result<()>;
+//
+// pub enum Writer<E: Default, W: Write> {
+//     Writer(Box<WriterFn<W>>),
+//     FlavoredWriter(Box<FlavoredWriterFn<E, W>>),
+// }
 
 // ------------------------------------------------------------------------------------------------
 // Public Functions
 // ------------------------------------------------------------------------------------------------
 
+///
+/// Write the provided document `doc`, in the format described by `format`, into the write
+/// implementation `w`.
+///
 pub fn write_document<W: Write>(
     doc: &Document,
     format: OutputFormat,
     w: &mut W,
 ) -> std::io::Result<()> {
     match format {
-        OutputFormat::Markdown(flavor) => markdown::writer::<MarkdownFlavor, W>(doc, flavor, w),
+        OutputFormat::Markdown(flavor) => markdown::writer::<W>(doc, flavor, w),
         OutputFormat::XWiki => xwiki::writer(doc, w),
     }
 }
 
 ///
-/// A convenience function that will return a String containing the output of the `DocWriter`
-/// for the given `Document` instance.
+/// A convenience function that will return a String containing the output of the `write_document`
+/// function for the given `Document` instance.
 ///
 pub fn write_document_to_string(doc: &Document, format: OutputFormat) -> std::io::Result<String> {
     use std::io::Cursor;
@@ -88,10 +140,6 @@ impl FromStr for OutputFormat {
         }
     }
 }
-
-// ------------------------------------------------------------------------------------------------
-// Private Functions
-// ------------------------------------------------------------------------------------------------
 
 // ------------------------------------------------------------------------------------------------
 // Modules

@@ -1,3 +1,7 @@
+/*!
+Common `Error`, `ErrorKind`, and `Result` types.
+*/
+
 error_chain! {
     errors {
         #[doc = "An empty string is not allowed here."]

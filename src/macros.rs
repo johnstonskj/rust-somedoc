@@ -1,16 +1,8 @@
-/*!
-One-line description.
-
-More detailed description, with
-
-# Example
-
-*/
-
 // ------------------------------------------------------------------------------------------------
 // Public Macros
 // ------------------------------------------------------------------------------------------------
 
+#[doc(hidden)]
 #[macro_export]
 macro_rules! doc {
     ($statements:block) => {{
@@ -22,6 +14,7 @@ macro_rules! doc {
     }};
 }
 
+/// Create a new `Span` with the provided text and the style `TextStyle::Bold`.
 #[macro_export]
 macro_rules! textbf {
     ($s:expr) => {
@@ -29,6 +22,7 @@ macro_rules! textbf {
     };
 }
 
+/// Create a new `Span` with the provided text and the style `TextStyle::Italic`.
 #[macro_export]
 macro_rules! textit {
     ($s:expr) => {
@@ -36,6 +30,7 @@ macro_rules! textit {
     };
 }
 
+/// Create a new `Span` with the provided text and the style `TextStyle::Slanted`.
 #[macro_export]
 macro_rules! textsl {
     ($s:expr) => {
@@ -43,6 +38,7 @@ macro_rules! textsl {
     };
 }
 
+/// Create a new `Span` with the provided text and the style `TextStyle::Mono`.
 #[macro_export]
 macro_rules! texttt {
     ($s:expr) => {
@@ -50,6 +46,7 @@ macro_rules! texttt {
     };
 }
 
+/// Create a new `Span` with the provided text and the style `TextStyle::Plain`.
 #[macro_export]
 macro_rules! text {
     ($s:expr) => {
@@ -57,6 +54,7 @@ macro_rules! text {
     };
 }
 
+/// Create a new `Span` with the provided text and the style `TextStyle::SmallCaps`.
 #[macro_export]
 macro_rules! textsc {
     ($s:expr) => {
@@ -64,15 +62,11 @@ macro_rules! textsc {
     };
 }
 
-#[doc(hidden)]
+/// Create a new `Span` with the provided text and the style `TextStyle::Strikethrough`.
 #[macro_export]
-macro_rules! inline_impls {
-    ($name:ident) => {
-        impl Into<InlineContent> for $name {
-            fn into(self) -> InlineContent {
-                InlineContent::$name(self)
-            }
-        }
+macro_rules! strike {
+    ($s:expr) => {
+        Span::strikethrough($s);
     };
 }
 
@@ -90,11 +84,54 @@ macro_rules! block_impls {
 
 #[doc(hidden)]
 #[macro_export]
+macro_rules! has_block_impls {
+    ($name:ident) => {
+        impl HasInnerContent<BlockContent> for $name {
+            fn inner(&self) -> &Vec<BlockContent> {
+                &self.content
+            }
+
+            fn into_inner(self) -> Vec<BlockContent> {
+                self.content
+            }
+
+            fn inner_mut(&mut self) -> &mut Vec<BlockContent> {
+                &mut self.content
+            }
+
+            fn add_content(&mut self, content: BlockContent) -> error::Result<()> {
+                self.content.push(content);
+                Ok(())
+            }
+        }
+
+        impl HasBlockContent for $name {}
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! inline_impls {
+    ($name:ident) => {
+        impl Into<InlineContent> for $name {
+            fn into(self) -> InlineContent {
+                InlineContent::$name(self)
+            }
+        }
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
 macro_rules! has_inline_impls {
     ($name:ident) => {
-        impl ComplexContent<InlineContent> for $name {
+        impl HasInnerContent<InlineContent> for $name {
             fn inner(&self) -> &Vec<InlineContent> {
                 &self.inner
+            }
+
+            fn into_inner(self) -> Vec<InlineContent> {
+                self.inner
             }
 
             fn inner_mut(&mut self) -> &mut Vec<InlineContent> {
@@ -137,6 +174,27 @@ macro_rules! has_inline_impls {
         impl From<&str> for $name {
             fn from(s: &str) -> Self {
                 Self::text_str(s)
+            }
+        }
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! has_styles_impls {
+    ($struct_name:ty, $style_name:ty) => {
+        impl HasStyles<$style_name> for $struct_name {
+            fn styles(&self) -> &Vec<$style_name> {
+                &self.styles
+            }
+
+            fn styles_mut(&mut self) -> &mut Vec<$style_name> {
+                &mut self.styles
+            }
+
+            fn add_style(&mut self, style: $style_name) -> error::Result<()> {
+                self.styles.push(style);
+                Ok(())
             }
         }
     };

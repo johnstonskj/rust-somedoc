@@ -1,22 +1,16 @@
-/*!
-One-line description.
-
-More detailed description, with
-
-# Example
-
-*/
-
 use crate::error;
 use crate::model::block::BlockContent;
 use crate::model::inline::HasInlineContent;
 use crate::model::inline::{Character, InlineContent};
-use crate::model::ComplexContent;
+use crate::model::HasInnerContent;
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
 // ------------------------------------------------------------------------------------------------
 
+///
+/// The alignment to be used for values in a column.
+///
 #[derive(Clone, Debug, PartialEq)]
 pub enum Alignment {
     Default,
@@ -25,35 +19,39 @@ pub enum Alignment {
     Centered,
 }
 
+///
+/// A typical, simple, table of rows and columns.
+///
 #[derive(Clone, Debug)]
 pub struct Table {
     columns: Vec<Column>,
     rows: Vec<Row>,
 }
 
+///
+/// Defines the shape of a table, each column has a label and alignment.
+///
 #[derive(Clone, Debug)]
 pub struct Column {
     label: String,
     alignment: Alignment,
 }
 
+///
+/// Rows represent data in the table and consist of a vector of `Cell`s.
+///
 #[derive(Clone, Debug)]
 pub struct Row {
     cells: Vec<Cell>,
 }
 
+///
+/// A Cell is an element at a specific row and column in the table. It is an inline content container.
+///
 #[derive(Clone, Debug)]
 pub struct Cell {
     inner: Vec<InlineContent>,
 }
-
-// ------------------------------------------------------------------------------------------------
-// Private Types
-// ------------------------------------------------------------------------------------------------
-
-// ------------------------------------------------------------------------------------------------
-// Public Functions
-// ------------------------------------------------------------------------------------------------
 
 // ------------------------------------------------------------------------------------------------
 // Implementations
@@ -214,11 +212,3 @@ impl Cell {
         }
     }
 }
-
-// ------------------------------------------------------------------------------------------------
-// Private Functions
-// ------------------------------------------------------------------------------------------------
-
-// ------------------------------------------------------------------------------------------------
-// Modules
-// ------------------------------------------------------------------------------------------------

@@ -1,27 +1,20 @@
-/*!
-One-line description.
-
-More detailed description, with
-
-# Example
-
-*/
-
 use crate::error;
 use crate::model::inline::{HasInlineContent, InlineContent};
-use crate::model::{ComplexContent, Style, Styled};
+use crate::model::{HasInnerContent, HasStyles, Style};
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
 // ------------------------------------------------------------------------------------------------
 
+///
+/// These represent styles that may be applied to a single `Span`. Note that they will be applied in
+/// the order they were added to the span. Writers should simply ignore styles they do not support.
+///
 #[derive(Clone, Debug, PartialEq)]
-pub enum TextStyle {
+pub enum SpanStyle {
     Plain,
     Italic,
     Slanted,
-    Quote,
-    Light,
     Bold,
     Mono,
     Code,
@@ -30,38 +23,57 @@ pub enum TextStyle {
     SmallCaps,
     Superscript,
     Subscript,
+    Sized(Size),
 }
 
-#[derive(Clone, Debug)]
-pub struct Text(String);
+///
+/// A size modifier for styling a `Span`.
+///
+#[derive(Clone, Debug, PartialEq)]
+pub enum Size {
+    Largest,
+    Larger,
+    Large,
+    Normal,
+    Small,
+    Smaller,
+    Smallest,
+}
 
+///
+/// A span consists of a list of styles to apply to an inner list of inline content.
+///
 #[derive(Clone, Debug)]
 pub struct Span {
     inner: Vec<InlineContent>,
-    styles: Vec<TextStyle>,
+    styles: Vec<SpanStyle>,
 }
 
-// TODO: math <https://pandoc.org/MANUAL.html#math>
-
-// ------------------------------------------------------------------------------------------------
-// Private Types
-// ------------------------------------------------------------------------------------------------
-
-// ------------------------------------------------------------------------------------------------
-// Public Functions
-// ------------------------------------------------------------------------------------------------
+///
+/// A `Text` instance holds simple plain, un-styled, text.
+///
+#[derive(Clone, Debug)]
+pub struct Text(String);
 
 // ------------------------------------------------------------------------------------------------
 // Implementations
 // ------------------------------------------------------------------------------------------------
 
-impl Default for TextStyle {
+impl Default for SpanStyle {
     fn default() -> Self {
         Self::Plain
     }
 }
 
-impl Style for TextStyle {}
+impl Style for SpanStyle {}
+
+// ------------------------------------------------------------------------------------------------
+
+impl Default for Size {
+    fn default() -> Self {
+        Self::Normal
+    }
+}
 
 // ------------------------------------------------------------------------------------------------
 
@@ -86,10 +98,12 @@ impl From<&str> for Text {
 inline_impls!(Text);
 
 impl Text {
+    /// Return a reference to the inner string.
     pub fn inner(&self) -> &String {
         &self.0
     }
 
+    /// Return the inner string.
     pub fn into_inner(self) -> String {
         self.0
     }
@@ -110,49 +124,32 @@ inline_impls!(Span);
 
 has_inline_impls!(Span);
 
-impl Styled<TextStyle> for Span {
-    fn styles(&self) -> &Vec<TextStyle> {
-        &self.styles
-    }
-
-    fn styles_mut(&mut self) -> &mut Vec<TextStyle> {
-        &mut self.styles
-    }
-
-    fn add_style(&mut self, style: TextStyle) -> error::Result<()> {
-        self.styles.push(style);
-        Ok(())
-    }
-}
+has_styles_impls!(Span, SpanStyle);
 
 impl Span {
+    /// Create a new span, with no styling, that includes a `Text` instance.
     pub fn new(inner: &str) -> Self {
         Self::new_with_style(inner, Default::default())
     }
 
-    pub fn new_with_style(inner: &str, style: TextStyle) -> Self {
+    /// Create a new span, with the provided style, that includes a `Text` instance.
+    pub fn new_with_style(inner: &str, style: SpanStyle) -> Self {
         Self {
             inner: vec![Text::from(inner).into()],
             styles: vec![style],
         }
     }
 
+    /// Create a new span, with no styling, that includes a `InlineContent` instance.
     pub fn new_inner(inner: InlineContent) -> Self {
         Self::new_inner_with_style(inner, Default::default())
     }
 
-    pub fn new_inner_with_style(inner: InlineContent, style: TextStyle) -> Self {
+    /// Create a new span, with the provided style, that includes a `InlineContent` instance.
+    pub fn new_inner_with_style(inner: InlineContent, style: SpanStyle) -> Self {
         Self {
             inner: vec![inner],
             styles: vec![style],
         }
     }
 }
-
-// ------------------------------------------------------------------------------------------------
-// Private Functions
-// ------------------------------------------------------------------------------------------------
-
-// ------------------------------------------------------------------------------------------------
-// Modules
-// ------------------------------------------------------------------------------------------------

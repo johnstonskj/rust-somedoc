@@ -1,21 +1,15 @@
-/*!
-One-line description.
-
-More detailed description, with
-
-# Example
-
-*/
-
 use crate::error;
 use crate::model::block::BlockContent;
 use crate::model::inline::{HasInlineContent, InlineContent, Span};
-use crate::model::{ComplexContent, Style, Styled};
+use crate::model::{HasInnerContent, HasStyles, Style};
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
 // ------------------------------------------------------------------------------------------------
 
+///
+/// The text alignment for this paragraph, used in ParagraphStyle.
+///
 #[derive(Clone, Debug, PartialEq)]
 pub enum Alignment {
     Left,
@@ -26,6 +20,9 @@ pub enum Alignment {
 
 // TODO: line blocks <https://pandoc.org/MANUAL.html#line-blocks>
 
+///
+/// The styles for the paragraph.
+///
 #[derive(Clone, Debug, PartialEq)]
 pub enum ParagraphStyle {
     Plain,
@@ -33,19 +30,14 @@ pub enum ParagraphStyle {
     Aligned(Alignment),
 }
 
+///
+/// A paragraph is a bounded block of inline content, usually text.
+///
 #[derive(Clone, Debug)]
 pub struct Paragraph {
     inner: Vec<InlineContent>,
     styles: Vec<ParagraphStyle>,
 }
-
-// ------------------------------------------------------------------------------------------------
-// Private Types
-// ------------------------------------------------------------------------------------------------
-
-// ------------------------------------------------------------------------------------------------
-// Public Functions
-// ------------------------------------------------------------------------------------------------
 
 // ------------------------------------------------------------------------------------------------
 // Implementations
@@ -82,20 +74,7 @@ block_impls!(Paragraph);
 
 has_inline_impls!(Paragraph);
 
-impl Styled<ParagraphStyle> for Paragraph {
-    fn styles(&self) -> &Vec<ParagraphStyle> {
-        &self.styles
-    }
-
-    fn styles_mut(&mut self) -> &mut Vec<ParagraphStyle> {
-        &mut self.styles
-    }
-
-    fn add_style(&mut self, style: ParagraphStyle) -> error::Result<()> {
-        self.styles.push(style);
-        Ok(())
-    }
-}
+has_styles_impls!(Paragraph, ParagraphStyle);
 
 impl Paragraph {
     pub fn new(inner: &str, style: ParagraphStyle) -> Self {
@@ -137,11 +116,3 @@ impl Paragraph {
             .unwrap()
     }
 }
-
-// ------------------------------------------------------------------------------------------------
-// Private Functions
-// ------------------------------------------------------------------------------------------------
-
-// ------------------------------------------------------------------------------------------------
-// Modules
-// ------------------------------------------------------------------------------------------------

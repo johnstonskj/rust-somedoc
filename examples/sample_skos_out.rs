@@ -19,7 +19,7 @@ fn main() {
         "http://amazon.com/vocabulary/fashion-design#DesignScheme",
     )));
 
-    doc.add_heading(Heading::heading_2("Labels"));
+    doc.add_heading(Heading::sub_section("Labels"));
 
     let mut labels = Quote::default();
     labels.add_paragraph(Paragraph::bold_str("skos:prefLabel"));
@@ -32,7 +32,7 @@ fn main() {
     ]));
     doc.add_table(table);
 
-    doc.add_heading(Heading::heading_2("Other Properties"));
+    doc.add_heading(Heading::sub_section("Other Properties"));
 
     doc.add_thematic_break();
     let mut links = Paragraph::default();
@@ -59,7 +59,7 @@ fn main() {
     doc.add_paragraph(links);
     doc.add_thematic_break();
 
-    doc.add_heading(Heading::heading_2("Concept Hierarchy"));
+    doc.add_heading(Heading::sub_section("Concept Hierarchy"));
 
     let mut top_list = List::default();
     top_list.add_item_from(Span::bold_str("First item").into());
@@ -70,7 +70,7 @@ fn main() {
     top_list.add_item_from(Text::from("First item").into());
     doc.add_list(top_list);
 
-    doc.add_heading(Heading::heading_2("Appendix - RDF"));
+    doc.add_heading(Heading::sub_section("Appendix - RDF"));
 
     doc.add_code_block(CodeBlock::new_with_language(
         "@prefix foo: <...>\nfoo:bar foo:baz 12.",

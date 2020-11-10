@@ -1,37 +1,85 @@
 /*!
-One-line description.
-
-More detailed description, with
-
-# Example
-
+This module provides the root `Document` type and document metadata properties.
 */
 
 use crate::error;
 use crate::model::block::{BlockContent, HasBlockContent};
-use crate::model::ComplexContent;
-use std::fmt::{Display, Formatter};
+use crate::model::HasInnerContent;
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
 // ------------------------------------------------------------------------------------------------
 
+///
+/// Common metadata properties.
+///
 #[derive(Clone, Debug, PartialEq)]
-pub enum DocumentMetadataKind {
-    Author,
-    Copyright,
-    Date,
-    Organization,
-    SubTitle,
-    Title,
+pub enum Metadata {
+    /// An author to attribute.
+    Author(Author),
+    /// The document's class, or type.
+    Class(Class),
+    /// A structured copyright statement.
+    Copyright(Copyright),
+    /// The date of this document.
+    Date(String),
+    /// Keywords to apply to this document.
+    Keywords(Vec<String>),
+    /// The revision identifier of this document.
+    Revision(String),
+    /// The publication status of this document.
+    Status(String),
+    /// This document's subtitle.
+    SubTitle(String),
+    /// This document's title.
+    Title(String),
+    /// An unknown property.
+    Other(SimpleProperty),
 }
 
+///
+///  A structured metadata property.
+///
 #[derive(Clone, Debug, PartialEq)]
-pub struct Metadata {
-    kind: DocumentMetadataKind,
-    value: Option<String>,
+pub struct Author {
+    pub name: String,
+    pub email: Option<String>,
+    pub organization: Option<String>,
 }
 
+///
+///  A structured metadata property.
+///
+#[derive(Clone, Debug, PartialEq)]
+pub struct Class {
+    pub name_or_path: String,
+}
+
+///
+///  A structured metadata property.
+///
+#[derive(Clone, Debug, PartialEq)]
+pub struct Copyright {
+    pub year: u16,
+    pub organization: Option<String>,
+    pub comment: Option<String>,
+}
+
+///
+///  A structured metadata property.
+///
+#[derive(Clone, Debug, PartialEq)]
+pub struct SimpleProperty {
+    pub name: String,
+    pub value: String,
+}
+
+///
+/// The root document itself, this contains a list of `BlockContent` values as well as a list of
+/// metadata properties.
+///
+/// Note that the `add_` and `set_` methods all return `&mut Self` and so calls to these may be chained.
+///
 #[derive(Debug)]
 pub struct Document {
     metadata: Vec<Metadata>,
@@ -50,54 +98,6 @@ pub struct Document {
 // Implementations
 // ------------------------------------------------------------------------------------------------
 
-impl Display for DocumentMetadataKind {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                DocumentMetadataKind::Author => "author",
-                DocumentMetadataKind::Copyright => "copyright",
-                DocumentMetadataKind::Date => "date",
-                DocumentMetadataKind::Organization => "organization",
-                DocumentMetadataKind::SubTitle => "sub_title",
-                DocumentMetadataKind::Title => "title",
-            }
-        )
-    }
-}
-
-impl Metadata {
-    pub fn new(kind: DocumentMetadataKind) -> Self {
-        Self { kind, value: None }
-    }
-
-    pub fn new_with_value(kind: DocumentMetadataKind, value: &str) -> error::Result<Self> {
-        if value.is_empty() {
-            Err(error::ErrorKind::MustNotBeEmpty.into())
-        } else {
-            Ok(Self {
-                kind,
-                value: Some(value.to_string()),
-            })
-        }
-    }
-
-    pub fn kind(&self) -> &DocumentMetadataKind {
-        &self.kind
-    }
-
-    pub fn has_value(&self) -> bool {
-        self.value.is_some()
-    }
-
-    pub fn value(&self) -> &Option<String> {
-        &self.value
-    }
-}
-
-// ------------------------------------------------------------------------------------------------
-
 impl Default for Document {
     fn default() -> Self {
         Self {
@@ -107,22 +107,15 @@ impl Default for Document {
     }
 }
 
-impl ComplexContent<BlockContent> for Document {
-    fn inner(&self) -> &Vec<BlockContent> {
-        &self.content
-    }
-
-    fn inner_mut(&mut self) -> &mut Vec<BlockContent> {
-        &mut self.content
-    }
-
-    fn add_content(&mut self, content: BlockContent) -> error::Result<()> {
-        self.content.push(content);
-        Ok(())
+impl Into<Document> for BlockContent {
+    fn into(self) -> Document {
+        let mut doc = Document::default();
+        let _ = doc.add_content(self);
+        doc
     }
 }
 
-impl HasBlockContent for Document {}
+has_block_impls!(Document);
 
 impl Document {
     pub fn has_metadata(&self) -> bool {
@@ -137,39 +130,90 @@ impl Document {
         &mut self.metadata
     }
 
-    pub fn add_metadata(&mut self, datum: Metadata) -> error::Result<()> {
+    pub fn add_metadata(&mut self, datum: Metadata) -> error::Result<&mut Self> {
         self.metadata.push(datum);
-        Ok(())
+        Ok(self)
     }
 
-    pub fn set_title(&mut self, v: &str) -> error::Result<()> {
-        self.add_metadata(Metadata::new_with_value(DocumentMetadataKind::Title, v)?)
+    pub fn set_title(&mut self, v: &str) -> error::Result<&mut Self> {
+        self.add_metadata(Metadata::Title(v.to_string()))?;
+        Ok(self)
     }
 
-    pub fn set_subtitle(&mut self, v: &str) -> error::Result<()> {
-        self.add_metadata(Metadata::new_with_value(DocumentMetadataKind::SubTitle, v)?)
+    pub fn set_subtitle(&mut self, v: &str) -> error::Result<&mut Self> {
+        self.add_metadata(Metadata::SubTitle(v.to_string()))?;
+        Ok(self)
     }
 
-    pub fn set_date(&mut self, v: &str) -> error::Result<()> {
-        self.add_metadata(Metadata::new_with_value(DocumentMetadataKind::Date, v)?)
+    pub fn set_date(&mut self, v: &str) -> error::Result<&mut Self> {
+        self.add_metadata(Metadata::Date(v.to_string()))?;
+        Ok(self)
     }
 
-    pub fn add_author(&mut self, v: &str) -> error::Result<()> {
-        self.add_metadata(Metadata::new_with_value(DocumentMetadataKind::Author, v)?)
+    pub fn add_author(&mut self, v: Author) -> error::Result<&mut Self> {
+        self.add_metadata(Metadata::Author(v))?;
+        Ok(self)
     }
 
-    pub fn set_organization(&mut self, v: &str) -> error::Result<()> {
-        self.add_metadata(Metadata::new_with_value(
-            DocumentMetadataKind::Organization,
-            v,
-        )?)
+    pub fn add_author_str(
+        &mut self,
+        name: &str,
+        email: Option<&str>,
+        organization: Option<&str>,
+    ) -> error::Result<&mut Self> {
+        self.add_metadata(Metadata::Author(Author {
+            name: name.to_string(),
+            email: email.map(str::to_string),
+            organization: organization.map(str::to_string),
+        }))?;
+        Ok(self)
     }
 
-    pub fn set_copyright(&mut self, v: &str) -> error::Result<()> {
-        self.add_metadata(Metadata::new_with_value(
-            DocumentMetadataKind::Copyright,
-            v,
-        )?)
+    pub fn add_copyright(&mut self, v: Copyright) -> error::Result<&mut Self> {
+        self.add_metadata(Metadata::Copyright(v))?;
+        Ok(self)
+    }
+
+    pub fn add_copyright_str(
+        &mut self,
+        year: u16,
+        organization: Option<&str>,
+        comment: Option<&str>,
+    ) -> error::Result<&mut Self> {
+        self.add_metadata(Metadata::Copyright(Copyright {
+            year,
+            organization: organization.map(str::to_string),
+            comment: comment.map(str::to_string),
+        }))?;
+        Ok(self)
+    }
+
+    pub fn add_keywords(&mut self, v: &[String]) -> error::Result<&mut Self> {
+        self.add_metadata(Metadata::Keywords(v.to_vec()))
+    }
+
+    pub fn add_keywords_str(&mut self, v: &[&str]) -> error::Result<&mut Self> {
+        self.add_metadata(Metadata::Keywords(
+            v.iter().cloned().map(str::to_string).collect(),
+        ))?;
+        Ok(self)
+    }
+
+    pub fn add_metadata_property(&mut self, v: SimpleProperty) -> error::Result<&mut Self> {
+        self.add_metadata(Metadata::Other(v))?;
+        Ok(self)
+    }
+
+    pub fn add_metadata_property_str(
+        &mut self,
+        name: &str,
+        value: &str,
+    ) -> error::Result<&mut Self> {
+        self.add_metadata(Metadata::Other(SimpleProperty {
+            name: name.to_string(),
+            value: value.to_string(),
+        }))?;
+        Ok(self)
     }
 }
 

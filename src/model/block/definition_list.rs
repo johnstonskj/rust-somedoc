@@ -1,49 +1,53 @@
-/*!
-One-line description.
-
-More detailed description, with
-
-# Example
-
-*/
 use crate::error;
 use crate::model::block::BlockContent;
 use crate::model::inline::{HasInlineContent, InlineContent};
-use crate::model::ComplexContent;
+use crate::model::HasInnerContent;
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
 // ------------------------------------------------------------------------------------------------
 
+///
+/// A list of terms and definitions. Note that while some markup languages support a single definition
+/// for multiple terms, or multiple definitions for the same term, `DefinitionList` only supports a
+/// one-to-one relationship.
+///
+/// A `DefinitionList` is a tree structure with `DefinitionListItem` being the inner nodes in the tree
+/// and which may contain either another list, or a `Definition`.
+///
+/// Finally, a `Definition` consists of a string term and a `DefinitionPart` that is an inline content
+/// container.
+///
 #[derive(Clone, Debug)]
 pub struct DefinitionList {
     inner: Vec<DefinitionListItem>,
 }
 
+///
+/// Inner node in a `DefinitionList` tree.
+///
 #[derive(Clone, Debug)]
 pub enum DefinitionListItem {
     List(DefinitionList),
     Item(Definition),
 }
 
+///
+/// A leaf in the `DefinitionList` tree, it contains the term and definition text.
+///
 #[derive(Clone, Debug)]
 pub struct Definition {
     term: DefinitionPart,
     text: DefinitionPart,
 }
 
+///
+/// The `Definition` text, it's inner content list of `InlineContent` values.
+///
 #[derive(Clone, Debug)]
 pub struct DefinitionPart {
     inner: Vec<InlineContent>,
 }
-
-// ------------------------------------------------------------------------------------------------
-// Private Types
-// ------------------------------------------------------------------------------------------------
-
-// ------------------------------------------------------------------------------------------------
-// Public Functions
-// ------------------------------------------------------------------------------------------------
 
 // ------------------------------------------------------------------------------------------------
 // Implementations
@@ -120,11 +124,3 @@ impl Default for DefinitionPart {
 }
 
 has_inline_impls!(DefinitionPart);
-
-// ------------------------------------------------------------------------------------------------
-// Private Functions
-// ------------------------------------------------------------------------------------------------
-
-// ------------------------------------------------------------------------------------------------
-// Modules
-// ------------------------------------------------------------------------------------------------

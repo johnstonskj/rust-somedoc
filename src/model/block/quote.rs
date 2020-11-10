@@ -1,32 +1,18 @@
-/*!
-One-line description.
-
-More detailed description, with
-
-# Example
-
-*/
-
 use crate::error;
 use crate::model::block::{BlockContent, HasBlockContent};
-use crate::model::ComplexContent;
+use crate::model::HasInnerContent;
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
 // ------------------------------------------------------------------------------------------------
 
+///
+/// Represents a block quote, note that these may be nested.
+///
 #[derive(Clone, Debug)]
 pub struct Quote {
     content: Vec<BlockContent>,
 }
-
-// ------------------------------------------------------------------------------------------------
-// Private Types
-// ------------------------------------------------------------------------------------------------
-
-// ------------------------------------------------------------------------------------------------
-// Public Functions
-// ------------------------------------------------------------------------------------------------
 
 // ------------------------------------------------------------------------------------------------
 // Implementations
@@ -48,27 +34,4 @@ impl From<BlockContent> for Quote {
 
 block_impls!(Quote);
 
-impl ComplexContent<BlockContent> for Quote {
-    fn inner(&self) -> &Vec<BlockContent> {
-        &self.content
-    }
-
-    fn inner_mut(&mut self) -> &mut Vec<BlockContent> {
-        &mut self.content
-    }
-
-    fn add_content(&mut self, content: BlockContent) -> error::Result<()> {
-        self.content.push(content);
-        Ok(())
-    }
-}
-
-impl HasBlockContent for Quote {}
-
-// ------------------------------------------------------------------------------------------------
-// Private Functions
-// ------------------------------------------------------------------------------------------------
-
-// ------------------------------------------------------------------------------------------------
-// Modules
-// ------------------------------------------------------------------------------------------------
+has_block_impls!(Quote);

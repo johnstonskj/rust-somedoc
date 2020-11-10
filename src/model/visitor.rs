@@ -13,7 +13,7 @@ use crate::model::block::{
 };
 use crate::model::document::{Document, Metadata};
 use crate::model::inline::{Anchor, HyperLink, Image, Text};
-use crate::model::ComplexContent;
+use crate::model::HasInnerContent;
 
 // ------------------------------------------------------------------------------------------------
 // Public Types

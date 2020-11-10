@@ -1,50 +1,49 @@
-/*!
-One-line description.
-
-More detailed description, with
-
-# Example
-
-*/
 use crate::error;
 use crate::model::block::BlockContent;
 use crate::model::inline::{HasInlineContent, InlineContent};
-use crate::model::ComplexContent;
+use crate::model::HasInnerContent;
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
 // ------------------------------------------------------------------------------------------------
 
+///
+/// The form of list, currently this only covers the ordering of items.
+///
 #[derive(Clone, Debug, PartialEq)]
 pub enum ListKind {
     Ordered,
     Unordered,
 }
 
+///
+/// A list is either a bulleted or unordered set of values, or an enumerated list of values.
+///
+/// A `List` is a tree structure with `ListItem` being the inner nodes in the tree
+/// and which may contain either another list, or a `Item`.
+///
 #[derive(Clone, Debug)]
 pub struct List {
     kind: ListKind,
     inner: Vec<ListItem>,
 }
 
+///
+/// Inner node in a `List` tree.
+///
 #[derive(Clone, Debug)]
 pub enum ListItem {
     List(List),
     Item(Item),
 }
 
+///
+/// A leaf in the `List` tree, it's inner content list of `InlineContent` values.
+///
 #[derive(Clone, Debug)]
 pub struct Item {
     inner: Vec<InlineContent>,
 }
-
-// ------------------------------------------------------------------------------------------------
-// Private Types
-// ------------------------------------------------------------------------------------------------
-
-// ------------------------------------------------------------------------------------------------
-// Public Functions
-// ------------------------------------------------------------------------------------------------
 
 // ------------------------------------------------------------------------------------------------
 // Implementations
@@ -82,6 +81,8 @@ impl List {
         Self::new(ListKind::Unordered)
     }
 
+    // --------------------------------------------------------------------------------------------
+
     pub fn has_inner(&self) -> bool {
         !self.inner.is_empty()
     }
@@ -90,25 +91,40 @@ impl List {
         &self.inner
     }
 
-    pub fn add_inner(&mut self, item: ListItem) {
+    // --------------------------------------------------------------------------------------------
+
+    pub fn add_inner(&mut self, item: ListItem) -> &mut Self {
         self.inner.push(item);
+        self
     }
 
-    pub fn add_item(&mut self, item: Item) {
+    pub fn add_item(&mut self, item: Item) -> &mut Self {
         self.add_inner(ListItem::Item(item));
+        self
     }
 
-    pub fn add_item_from(&mut self, item: InlineContent) {
+    pub fn add_item_from(&mut self, item: InlineContent) -> &mut Self {
         self.add_inner(ListItem::Item(item.into()));
+        self
     }
 
-    pub fn add_sub_list(&mut self, item: List) {
+    pub fn add_sub_list(&mut self, item: List) -> &mut Self {
         self.add_inner(ListItem::List(item));
+        self
     }
+
+    // --------------------------------------------------------------------------------------------
 
     pub fn is_ordered(&self) -> bool {
         match self.kind {
             ListKind::Ordered => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_unordered(&self) -> bool {
+        match self.kind {
+            ListKind::Unordered => true,
             _ => false,
         }
     }
@@ -159,11 +175,3 @@ impl ListItem {
         }
     }
 }
-
-// ------------------------------------------------------------------------------------------------
-// Private Functions
-// ------------------------------------------------------------------------------------------------
-
-// ------------------------------------------------------------------------------------------------
-// Modules
-// ------------------------------------------------------------------------------------------------

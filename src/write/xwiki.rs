@@ -1,26 +1,31 @@
 /*!
-One-line description.
-
-More detailed description, with
+Write the document in the [XWiki](https://www.xwiki.org/xwiki/bin/view/Documentation/UserGuide/Features/XWikiSyntax/)
+format.
 
 # Example
 
+```rust
+# use somedoc::model::Document;
+use somedoc::write::OutputFormat;
+use somedoc::write::xwiki::writer;
+
+# fn make_some_document() -> Document { Document::default() }
+let doc = make_some_document();
+
+writer(&doc, &mut std::io::stdout()).unwrap();
+```
 */
 
 use crate::model::block::quote::Quote;
 use crate::model::block::{
-    BlockContent, CodeBlock, DefinitionList, DefinitionListItem, Formatted, Heading, HeadingKind,
+    BlockContent, CodeBlock, DefinitionList, DefinitionListItem, Formatted, Heading, HeadingLevel,
     List, ListItem, Paragraph, Table,
 };
 use crate::model::inline::{
-    Character, HyperLink, HyperLinkTarget, Image, InlineContent, Span, TextStyle,
+    Character, HyperLink, HyperLinkTarget, Image, InlineContent, Span, SpanStyle,
 };
-use crate::model::{ComplexContent, Document, Styled};
+use crate::model::{Document, HasInnerContent, HasStyles};
 use std::io::Write;
-
-// ------------------------------------------------------------------------------------------------
-// Public Types
-// ------------------------------------------------------------------------------------------------
 
 // ------------------------------------------------------------------------------------------------
 // Private Types
@@ -36,6 +41,13 @@ struct XWikiWriter<'a, W: Write> {
 // Public Functions
 // ------------------------------------------------------------------------------------------------
 
+///
+/// Implementation of the writer function for XWiki.
+///
+/// While this can be called directly it is most often used  by calling either
+/// [`model::write_document`](../fn.write_document.html) or
+/// [`model::write_document_to_string`](../fn.write_document_to_string.html).
+///
 pub fn writer<W: Write>(doc: &Document, w: &mut W) -> std::io::Result<()> {
     info!("xwiki::writer(.., ..)");
     let mut writer = XWikiWriter::new(w);
@@ -92,23 +104,21 @@ fn write_blocks<W: Write>(
 
 fn write_heading<W: Write>(w: &mut XWikiWriter<W>, content: &Heading) -> std::io::Result<()> {
     debug!("xwiki::write_heading({:?})", content);
-    let depth = match content.kind() {
-        HeadingKind::Title => 1,
-        HeadingKind::Subtitle => 2,
-        HeadingKind::Chapter => 3,
-        HeadingKind::Heading(d) => *d,
-    };
-    for _ in 0..depth {
-        write!(w.w, "=")?;
+    let depth = content.level_as_u8();
+    if depth >= HeadingLevel::Section as u8 {
+        for _ in 0..depth {
+            write!(w.w, "=")?;
+        }
+        write!(w.w, " ")?;
+        write_inlines(w, content.inner())?;
+        write!(w.w, " ")?;
+        for _ in 0..depth {
+            write!(w.w, "=")?;
+        }
+        writeln!(w.w)?;
+        writeln!(w.w)?;
     }
-    write!(w.w, " ")?;
-    write_inlines(w, content.inner())?;
-    write!(w.w, " ")?;
-    for _ in 0..depth {
-        write!(w.w, "=")?;
-    }
-    writeln!(w.w)?;
-    writeln!(w.w)
+    Ok(())
 }
 
 fn write_image<W: Write>(
@@ -250,9 +260,10 @@ fn write_code_block<W: Write>(w: &mut XWikiWriter<W>, content: &CodeBlock) -> st
     if let Some(language) = content.language() {
         write!(w.w, " language=\"{}\"", language)?;
     }
+    writeln!(w.w, "}}}}")?;
     writeln!(w.w)?;
     writeln!(w.w, "{}", content.code())?;
-    writeln!(w.w, "}}}}")?;
+    writeln!(w.w, "{{{{/code}}}}")?;
     writeln!(w.w)
 }
 
@@ -281,16 +292,19 @@ fn write_span<W: Write>(w: &mut XWikiWriter<W>, content: &Span) -> std::io::Resu
     let mut style_stack = Vec::new();
     for style in content.styles() {
         let delim: &str = match style {
-            TextStyle::Plain => "",
-            TextStyle::Italic | TextStyle::Slanted | TextStyle::Quote => "//",
-            TextStyle::Light => "",
-            TextStyle::Bold => "**",
-            TextStyle::Mono | TextStyle::Code => "##",
-            TextStyle::Strikethrough => "--",
-            TextStyle::Underline => "__",
-            TextStyle::SmallCaps => "",
-            TextStyle::Superscript => "^^",
-            TextStyle::Subscript => ",,",
+            SpanStyle::Plain => {
+                style_stack.clear();
+                ""
+            }
+            SpanStyle::Italic | SpanStyle::Slanted => "//",
+            SpanStyle::Bold => "**",
+            SpanStyle::Mono | SpanStyle::Code => "##",
+            SpanStyle::Strikethrough => "--",
+            SpanStyle::Underline => "__",
+            SpanStyle::SmallCaps => "",
+            SpanStyle::Superscript => "^^",
+            SpanStyle::Subscript => ",,",
+            _ => "",
         };
         if !delim.is_empty() {
             write!(w.w, "{}", delim)?;
@@ -343,7 +357,3 @@ fn write_link<W: Write>(w: &mut XWikiWriter<W>, content: &HyperLink) -> std::io:
     }
     Ok(())
 }
-
-// ------------------------------------------------------------------------------------------------
-// Modules
-// ------------------------------------------------------------------------------------------------

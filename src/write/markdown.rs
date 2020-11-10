@@ -1,23 +1,40 @@
 /*!
-One-line description.
+Write the document in one of the well-defined flavors of Markup.
 
-More detailed description, with
+# Flavors
+
+* **[Strict](https://daringfireball.net/projects/markdown/syntax)**; the original
+* **[CommonMark](https://spec.commonmark.org/0.29/)**; . This is the default flavor.
+* **[GitHub](https://github.github.com/gfm/)**;
+* **[Multi](https://rawgit.com/fletcher/MultiMarkdown-6-Syntax-Guide/master/index.html)**;
+* **[PhpExtra](https://michelf.ca/projects/php-markdown/extra/)**;
 
 # Example
 
+```rust
+# use somedoc::model::Document;
+use somedoc::write::OutputFormat;
+use somedoc::write::markdown::{writer, MarkdownFlavor};
+
+# fn make_some_document() -> Document { Document::default() }
+let doc = make_some_document();
+
+writer(&doc, MarkdownFlavor::GitHub, &mut std::io::stdout()).unwrap();
+```
 */
 
 use crate::error;
 use crate::model::block::quote::Quote;
 use crate::model::block::table::Alignment;
 use crate::model::block::{
-    BlockContent, CodeBlock, DefinitionList, DefinitionListItem, Formatted, Heading, HeadingKind,
+    BlockContent, CodeBlock, DefinitionList, DefinitionListItem, Formatted, Heading, HeadingLevel,
     List, ListItem, Paragraph, Table,
 };
+use crate::model::document::Metadata;
 use crate::model::inline::{
-    Character, HyperLink, HyperLinkTarget, Image, InlineContent, Span, TextStyle,
+    Character, HyperLink, HyperLinkTarget, Image, InlineContent, Span, SpanStyle,
 };
-use crate::model::{ComplexContent, Document, Styled};
+use crate::model::{Document, HasInnerContent, HasStyles};
 use crate::write::OutputFormat;
 use std::fmt::{Display, Formatter};
 use std::io::Write;
@@ -57,12 +74,13 @@ struct MarkdownWriter<'a, W: Write> {
     w: &'a mut W,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, PartialEq)]
 enum MetadataFlavor {
+    HiddenLinks,
     #[allow(dead_code)]
     PercentComment,
     #[allow(dead_code)]
-    FencedYaml(String),
+    FencedYaml,
     Yaml,
 }
 
@@ -73,18 +91,21 @@ struct Features {
     has_fenced_code_blocks: bool,
     has_code_syntax: bool,
     has_strikethrough: bool,
-    metadata: Option<MetadataFlavor>,
+    metadata: MetadataFlavor,
 }
 
 // ------------------------------------------------------------------------------------------------
 // Public Functions
 // ------------------------------------------------------------------------------------------------
 
-pub fn writer<E, W: Write>(
-    doc: &Document,
-    flavor: MarkdownFlavor,
-    w: &mut W,
-) -> std::io::Result<()> {
+///
+/// Implementation of the writer function for a set of Markdown flavors.
+///
+/// While this can be called directly it is most often used  by calling either
+/// [`model::write_document`](../fn.write_document.html) or
+/// [`model::write_document_to_string`](../fn.write_document_to_string.html).
+///
+pub fn writer<W: Write>(doc: &Document, flavor: MarkdownFlavor, w: &mut W) -> std::io::Result<()> {
     info!("markdown::writer(.., {}, ..)", flavor);
     let mut writer = MarkdownWriter::new(flavor, w);
     write_document(&mut writer, doc)
@@ -113,13 +134,12 @@ const SPAN_BOLD: &str = "**";
 const SPAN_ITALIC: &str = "*";
 const SPAN_STRIKETHROUGH: &str = "~~";
 
-const THEMATIC_BREAK: &str = "---";
+const THEMATIC_BREAK: &str = "-----";
 
 const TABLE_PIPE: &str = "|";
 const TABLE_BAR: &str = "---";
 const TABLE_ALIGN: &str = ":";
 
-#[allow(dead_code)]
 const YAML_FENCE: &str = "-----";
 
 const STRICT_FEATURES: Features = Features {
@@ -128,7 +148,7 @@ const STRICT_FEATURES: Features = Features {
     has_fenced_code_blocks: false,
     has_code_syntax: false,
     has_strikethrough: false,
-    metadata: None,
+    metadata: MetadataFlavor::HiddenLinks,
 };
 
 const COMMONMARK_FEATURES: Features = Features {
@@ -137,7 +157,7 @@ const COMMONMARK_FEATURES: Features = Features {
     has_fenced_code_blocks: true,
     has_code_syntax: true,
     has_strikethrough: false,
-    metadata: None,
+    metadata: MetadataFlavor::HiddenLinks,
 };
 
 const GFM_FEATURES: Features = Features {
@@ -146,7 +166,7 @@ const GFM_FEATURES: Features = Features {
     has_fenced_code_blocks: true,
     has_code_syntax: true,
     has_strikethrough: true,
-    metadata: None,
+    metadata: MetadataFlavor::HiddenLinks,
 };
 
 const MMD_FEATURES: Features = Features {
@@ -155,7 +175,7 @@ const MMD_FEATURES: Features = Features {
     has_fenced_code_blocks: true,
     has_code_syntax: true,
     has_strikethrough: false,
-    metadata: Some(MetadataFlavor::Yaml),
+    metadata: MetadataFlavor::Yaml,
 };
 
 const PHP_EXTRA_FEATURES: Features = Features {
@@ -164,7 +184,7 @@ const PHP_EXTRA_FEATURES: Features = Features {
     has_fenced_code_blocks: true,
     has_code_syntax: false,
     has_strikethrough: false,
-    metadata: None,
+    metadata: MetadataFlavor::HiddenLinks,
 };
 
 // ------------------------------------------------------------------------------------------------
@@ -234,41 +254,218 @@ impl<'a, W: Write> MarkdownWriter<'a, W> {
 // Private Functions
 // ------------------------------------------------------------------------------------------------
 
-// type WriteFn<T, W: Write> = dyn FnMut(&mut MarkdownWriter<W>, &T) -> std::io::Result<()>;
-
 fn write_document<W: Write>(w: &mut MarkdownWriter<W>, content: &Document) -> std::io::Result<()> {
     debug!("markdown::write_document({:?})", content);
 
-    if content.has_metadata() && w.features.metadata.is_some() {
-        let (prefix, fence) = match &w.features.metadata.as_ref().unwrap() {
-            MetadataFlavor::PercentComment => (Some("%"), None),
-            MetadataFlavor::FencedYaml(fence) => (None, Some(fence)),
-            MetadataFlavor::Yaml => (None, None),
-        };
-        if let Some(fence) = fence {
-            writeln!(w.w, "{}", fence)?;
-        }
-        for datum in content.metadata() {
-            if let Some(prefix) = prefix {
-                writeln!(
-                    w.w,
-                    "{} {}: {}",
-                    prefix,
-                    datum.kind(),
-                    match datum.value() {
-                        None => "",
-                        Some(s) => s,
-                    }
-                )?;
-            }
-        }
-        if let Some(fence) = fence {
-            writeln!(w.w, "{}", fence)?;
-        }
+    if content.has_metadata() {
+        write_metadata(w, content.metadata())?;
         writeln!(w.w)?;
     }
 
     write_blocks(w, content.inner())
+}
+
+fn write_metadata<W: Write>(
+    w: &mut MarkdownWriter<W>,
+    metadata: &Vec<Metadata>,
+) -> std::io::Result<()> {
+    if w.features.metadata == MetadataFlavor::FencedYaml {
+        writeln!(w.w, "{}", YAML_FENCE)?;
+    }
+    for datum in metadata {
+        write_metadatum(w, datum)?;
+    }
+    if w.features.metadata == MetadataFlavor::FencedYaml {
+        writeln!(w.w, "{}", YAML_FENCE)?;
+    }
+    Ok(())
+}
+
+fn write_metadatum<W: Write>(w: &mut MarkdownWriter<W>, datum: &Metadata) -> std::io::Result<()> {
+    fn write_as_link<W: Write>(w: &mut W, k: &str, v: &str) -> std::io::Result<()> {
+        writeln!(w, "[_metadata_:{}]:- \"{}\"", k, v)
+    }
+
+    fn write_as_prop<W: Write>(w: &mut W, k: &str, v: &str, pct: bool) -> std::io::Result<()> {
+        writeln!(w, "{}{}: {}", if pct { "% " } else { "" }, k, v)
+    }
+
+    match datum {
+        Metadata::Author(value) => match &w.features.metadata {
+            MetadataFlavor::HiddenLinks => {
+                write_as_link(
+                    w.w,
+                    "author",
+                    &format!(
+                        "{}{}{}",
+                        value.name,
+                        value
+                            .email
+                            .as_ref()
+                            .map(|s| format!("({})", s))
+                            .unwrap_or_default(),
+                        value
+                            .organization
+                            .as_ref()
+                            .map(|s| format!(" - {}", s))
+                            .unwrap_or_default()
+                    ),
+                )?;
+            }
+            MetadataFlavor::PercentComment => {
+                writeln!(
+                    w.w,
+                    "% author: {}{}{}",
+                    value.name,
+                    value
+                        .email
+                        .as_ref()
+                        .map(|s| format!("({})", s))
+                        .unwrap_or_default(),
+                    value
+                        .organization
+                        .as_ref()
+                        .map(|s| format!(" - {}", s))
+                        .unwrap_or_default()
+                )?;
+            }
+            MetadataFlavor::FencedYaml | MetadataFlavor::Yaml => {
+                writeln!(w.w, "author:")?;
+                writeln!(w.w, "- name: {}", value.name)?;
+                if let Some(email) = &value.email {
+                    writeln!(w.w, "  email: {}", &email)?;
+                }
+                if let Some(organization) = &value.organization {
+                    writeln!(w.w, "  organization: {}", &organization)?;
+                }
+            }
+        },
+        Metadata::Class(value) => {
+            if w.features.metadata == MetadataFlavor::HiddenLinks {
+                write_as_link(w.w, "css", &value.name_or_path)?;
+            } else {
+                write_as_prop(
+                    w.w,
+                    "css",
+                    &value.name_or_path,
+                    w.features.metadata == MetadataFlavor::PercentComment,
+                )?;
+            }
+        }
+        Metadata::Copyright(value) => {
+            let copyright = format!(
+                "{}{}{}",
+                value.year,
+                value
+                    .organization
+                    .as_ref()
+                    .map(|s| format!(" {}.", s))
+                    .unwrap_or_default(),
+                value
+                    .comment
+                    .as_ref()
+                    .map(|s| format!(" - {}.", s))
+                    .unwrap_or_default()
+            );
+            if w.features.metadata == MetadataFlavor::HiddenLinks {
+                write_as_link(w.w, "copyright", &copyright)?;
+            } else {
+                write_as_prop(
+                    w.w,
+                    "copyright",
+                    &copyright,
+                    w.features.metadata == MetadataFlavor::PercentComment,
+                )?;
+            }
+        }
+        Metadata::Date(value) => {
+            if w.features.metadata == MetadataFlavor::HiddenLinks {
+                write_as_link(w.w, "date", value)?;
+            } else {
+                write_as_prop(
+                    w.w,
+                    "date",
+                    value,
+                    w.features.metadata == MetadataFlavor::PercentComment,
+                )?;
+            }
+        }
+        Metadata::Keywords(value) => {
+            let keywords = format!("[{}]", value.join(", "));
+            if w.features.metadata == MetadataFlavor::HiddenLinks {
+                write_as_link(w.w, "keywords", &keywords)?;
+            } else {
+                write_as_prop(
+                    w.w,
+                    "keywords",
+                    &keywords,
+                    w.features.metadata == MetadataFlavor::PercentComment,
+                )?;
+            }
+        }
+        Metadata::Revision(value) => {
+            if w.features.metadata == MetadataFlavor::HiddenLinks {
+                write_as_link(w.w, "revision", value)?;
+            } else {
+                write_as_prop(
+                    w.w,
+                    "revision",
+                    value,
+                    w.features.metadata == MetadataFlavor::PercentComment,
+                )?;
+            }
+        }
+        Metadata::Status(value) => {
+            if w.features.metadata == MetadataFlavor::HiddenLinks {
+                write_as_link(w.w, "status", value)?;
+            } else {
+                write_as_prop(
+                    w.w,
+                    "status",
+                    value,
+                    w.features.metadata == MetadataFlavor::PercentComment,
+                )?;
+            }
+        }
+        Metadata::SubTitle(value) => {
+            if w.features.metadata == MetadataFlavor::HiddenLinks {
+                write_as_link(w.w, "subtitle", value)?;
+            } else {
+                write_as_prop(
+                    w.w,
+                    "subtitle",
+                    value,
+                    w.features.metadata == MetadataFlavor::PercentComment,
+                )?;
+            }
+        }
+        Metadata::Title(value) => {
+            if w.features.metadata == MetadataFlavor::HiddenLinks {
+                write_as_link(w.w, "title", value)?;
+            } else {
+                write_as_prop(
+                    w.w,
+                    "title",
+                    value,
+                    w.features.metadata == MetadataFlavor::PercentComment,
+                )?;
+            }
+        }
+        Metadata::Other(value) => {
+            if w.features.metadata == MetadataFlavor::HiddenLinks {
+                write_as_link(w.w, &value.name, &value.value)?;
+            } else {
+                write_as_prop(
+                    w.w,
+                    &value.name,
+                    &value.value,
+                    w.features.metadata == MetadataFlavor::PercentComment,
+                )?;
+            }
+        }
+    }
+
+    Ok(())
 }
 
 fn write_blocks<W: Write>(
@@ -307,19 +504,17 @@ fn write_blocks<W: Write>(
 
 fn write_heading<W: Write>(w: &mut MarkdownWriter<W>, content: &Heading) -> std::io::Result<()> {
     debug!("markdown::write_heading({:?})", content);
-    let depth = match content.kind() {
-        HeadingKind::Title => 1,
-        HeadingKind::Subtitle => 2,
-        HeadingKind::Chapter => 3,
-        HeadingKind::Heading(d) => *d,
-    };
-    for _ in 0..depth {
-        write!(w.w, "{}", HEADER)?;
+    let depth = content.level_as_u8();
+    if depth >= HeadingLevel::Section as u8 {
+        for _ in 0..depth {
+            write!(w.w, "{}", HEADER)?;
+        }
+        write!(w.w, " ")?;
+        write_inlines(w, content.inner())?;
+        writeln!(w.w)?;
+        writeln!(w.w)?;
     }
-    write!(w.w, " ")?;
-    write_inlines(w, content.inner())?;
-    writeln!(w.w)?;
-    writeln!(w.w)
+    Ok(())
 }
 
 fn write_image<W: Write>(
@@ -520,22 +715,21 @@ fn write_span<W: Write>(w: &mut MarkdownWriter<W>, content: &Span) -> std::io::R
     let mut style_stack = Vec::new();
     for style in content.styles() {
         let delim: &str = match style {
-            TextStyle::Plain => "",
-            TextStyle::Italic | TextStyle::Slanted | TextStyle::Quote => SPAN_ITALIC,
-            TextStyle::Light => "",
-            TextStyle::Bold => SPAN_BOLD,
-            TextStyle::Mono | TextStyle::Code => "`",
-            TextStyle::Strikethrough => {
+            SpanStyle::Plain => {
+                style_stack.clear();
+                ""
+            }
+            SpanStyle::Italic | SpanStyle::Slanted => SPAN_ITALIC,
+            SpanStyle::Bold => SPAN_BOLD,
+            SpanStyle::Mono | SpanStyle::Code => "`",
+            SpanStyle::Strikethrough => {
                 if w.features.has_strikethrough {
                     SPAN_STRIKETHROUGH
                 } else {
                     ""
                 }
             }
-            TextStyle::Underline => "",
-            TextStyle::SmallCaps => "",
-            TextStyle::Superscript => "",
-            TextStyle::Subscript => "",
+            _ => "",
         };
         write!(w.w, "{}", delim)?;
         style_stack.push(delim);
@@ -594,7 +788,3 @@ fn write_link<W: Write>(w: &mut MarkdownWriter<W>, content: &HyperLink) -> std::
     }
     Ok(())
 }
-
-// ------------------------------------------------------------------------------------------------
-// Modules
-// ------------------------------------------------------------------------------------------------
