@@ -107,6 +107,10 @@ println!("{}", doc_str);
 
 ## Changes
 
+**Version 0.1.7**
+
+* Fixed a bug in HeadingLevel/markdown generation.
+
 **Version 0.1.6**
 
 * Started on library documentation.

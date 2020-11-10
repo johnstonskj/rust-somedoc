@@ -14,8 +14,6 @@ use crate::model::HasInnerContent;
 #[repr(u8)]
 pub enum HeadingLevel {
     Title = 0,
-    Subtitle,
-    Chapter,
     Section,
     SubSection,
     SubSubSection,
@@ -69,14 +67,6 @@ impl Heading {
 
     pub fn title(inner: &str) -> Self {
         Self::new(inner, HeadingLevel::Title)
-    }
-
-    pub fn subtitle(inner: &str) -> Self {
-        Self::new(inner, HeadingLevel::Subtitle)
-    }
-
-    pub fn chapter(inner: &str) -> Self {
-        Self::new(inner, HeadingLevel::Chapter)
     }
 
     pub fn section(inner: &str) -> Self {
