@@ -199,3 +199,23 @@ macro_rules! has_styles_impls {
         }
     };
 }
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! has_captioned_impls {
+    ($struct_name:ty) => {
+        impl Captioned for $struct_name {
+            fn caption(&self) -> &Option<Caption> {
+                &self.caption
+            }
+
+            fn set_caption(&mut self, caption: Caption) {
+                self.caption = Some(caption);
+            }
+
+            fn unset_caption(&mut self) {
+                self.caption = None;
+            }
+        }
+    };
+}

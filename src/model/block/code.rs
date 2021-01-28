@@ -1,4 +1,4 @@
-use crate::model::block::BlockContent;
+use crate::model::block::{BlockContent, Caption, Captioned};
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
@@ -17,6 +17,7 @@ pub struct Formatted(String);
 pub struct CodeBlock {
     code: String,
     language: Option<String>,
+    caption: Option<Caption>,
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -43,11 +44,14 @@ impl Formatted {
 
 block_impls!(CodeBlock);
 
+has_captioned_impls!(CodeBlock);
+
 impl CodeBlock {
     pub fn new(code: &str) -> Self {
         Self {
             code: code.to_string(),
             language: None,
+            caption: None,
         }
     }
 
@@ -55,6 +59,7 @@ impl CodeBlock {
         Self {
             code: code.to_string(),
             language: Some(language.to_string()),
+            caption: None,
         }
     }
 

@@ -1,6 +1,7 @@
 use crate::error;
 use crate::model::inline::InlineContent;
 use regex::Regex;
+use std::ops::Deref;
 use std::str::FromStr;
 
 // ------------------------------------------------------------------------------------------------
@@ -40,6 +41,14 @@ impl FromStr for Emoji {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Self::new(s)
+    }
+}
+
+impl Deref for Emoji {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 

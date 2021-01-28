@@ -10,9 +10,12 @@ use somedoc::write::{write_document_to_string, OutputFormat};
 fn main() {
     let mut doc = Document::default();
 
-    doc.add_heading(Heading::title(
+    doc.add_heading(Heading::section(
         "Scheme: Clothing shapes, patterns, and details",
     ));
+
+    doc.add_comment_str("TODO:\n- more nested lists\n- tables");
+
     doc.add_paragraph(Paragraph::italic_str("Terms commonly used to describe fashion items. It includes terms for outline, fit, elements, detailing, and patterns."));
 
     doc.add_paragraph(Paragraph::link(HyperLink::external(
@@ -23,6 +26,7 @@ fn main() {
 
     let mut labels = Quote::default();
     labels.add_paragraph(Paragraph::bold_str("skos:prefLabel"));
+    labels.add_paragraph(Paragraph::bold_str("skos:altLabel"));
     doc.add_block_quote(labels);
 
     let mut table = Table::new(&[Column::from("Label text"), Column::from("Language")]);

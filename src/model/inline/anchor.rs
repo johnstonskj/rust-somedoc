@@ -1,6 +1,7 @@
 use crate::error;
 use crate::model::inline::{HyperLink, InlineContent};
 use std::fmt::{Display, Formatter};
+use std::ops::Deref;
 use std::str::FromStr;
 
 // ------------------------------------------------------------------------------------------------
@@ -36,6 +37,14 @@ impl FromStr for Anchor {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Self::new(s)
+    }
+}
+
+impl Deref for Anchor {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 

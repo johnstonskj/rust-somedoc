@@ -3,7 +3,7 @@ This module is the root of a set of types that represent *block* content; that i
 stands on it's own such as a complete paragraph.
 */
 
-use crate::model::inline::image::Image;
+use crate::model::inline::Image;
 use crate::model::HasInnerContent;
 
 // ------------------------------------------------------------------------------------------------
@@ -21,6 +21,8 @@ pub enum BlockContent {
     Heading(Heading),
     /// A block containing an image only.
     Image(Image),
+    /// Block formatted math formula.
+    MathBlock(MathBlock),
     /// An ordered, or unordered, and possibly nested list.
     List(List),
     /// A definition list.
@@ -50,6 +52,13 @@ pub trait HasBlockContent: Default + HasInnerContent<BlockContent> {
     fn from(inner: BlockContent) -> Self {
         let mut new_self = Self::default();
         new_self.add_content(inner).unwrap();
+        new_self
+    }
+
+    /// Create a new block content container from the provided `String` content item.
+    fn comment(inner: String) -> Self {
+        let mut new_self = Self::default();
+        new_self.add_comment_str(&inner);
         new_self
     }
 
@@ -125,6 +134,13 @@ pub trait HasBlockContent: Default + HasInnerContent<BlockContent> {
 
     // --------------------------------------------------------------------------------------------
 
+    /// Add the provided `Comment` to this container's inner content.
+    fn add_comment_str(&mut self, inner: &str) -> &mut Self {
+        self.add_content(BlockContent::Comment(inner.to_string()))
+            .unwrap();
+        self
+    }
+
     /// Add the provided `Heading` to this container's inner content.
     fn add_heading(&mut self, inner: Heading) -> &mut Self {
         self.add_content(inner.into()).unwrap();
@@ -191,6 +207,10 @@ pub trait HasBlockContent: Default + HasInnerContent<BlockContent> {
 // ------------------------------------------------------------------------------------------------
 
 #[doc(hidden)]
+pub mod caption;
+pub use caption::{Caption, Captioned};
+
+#[doc(hidden)]
 pub mod code;
 pub use code::{CodeBlock, Formatted};
 
@@ -205,6 +225,10 @@ pub use list::{Item, List, ListItem, ListKind};
 #[doc(hidden)]
 pub mod definition_list;
 pub use definition_list::{Definition, DefinitionList, DefinitionListItem, DefinitionPart};
+
+#[doc(hidden)]
+pub mod math;
+pub use math::MathBlock;
 
 #[doc(hidden)]
 pub mod paragraph;

@@ -105,10 +105,15 @@ struct Features {
 /// [`model::write_document`](../fn.write_document.html) or
 /// [`model::write_document_to_string`](../fn.write_document_to_string.html).
 ///
-pub fn writer<W: Write>(doc: &Document, flavor: MarkdownFlavor, w: &mut W) -> std::io::Result<()> {
+pub fn writer<W: Write>(
+    doc: &Document,
+    flavor: MarkdownFlavor,
+    w: &mut W,
+) -> crate::error::Result<()> {
     info!("markdown::writer(.., {}, ..)", flavor);
     let mut writer = MarkdownWriter::new(flavor, w);
-    write_document(&mut writer, doc)
+    write_document(&mut writer, doc)?;
+    Ok(())
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -205,7 +210,7 @@ impl Display for MarkdownFlavor {
                 MarkdownFlavor::CommonMark => "commonmark",
                 MarkdownFlavor::GitHub => "gfm",
                 MarkdownFlavor::Multi => "multi",
-                MarkdownFlavor::PhpExtra => "php_extra",
+                MarkdownFlavor::PhpExtra => "mdextra",
             }
         )
     }
@@ -494,6 +499,7 @@ fn write_blocks<W: Write>(
             BlockContent::Quote(content) => write_quote(w, content),
             BlockContent::Table(content) => write_table(w, content),
             BlockContent::ThematicBreak => writeln!(w.w, "{}\n", THEMATIC_BREAK),
+            BlockContent::MathBlock(_) => Ok(()),
         }?;
         if idx < count - 1 {
             write_quote_prefix(w)?;
@@ -706,6 +712,7 @@ fn write_inlines<W: Write>(
                 writeln!(w.w, "  ")?;
             }
             InlineContent::Span(value) => write_span(w, value)?,
+            InlineContent::Math(_) => {}
         }
     }
     Ok(())
@@ -762,9 +769,7 @@ fn write_character<W: Write>(
 
 fn write_link<W: Write>(w: &mut MarkdownWriter<W>, content: &HyperLink) -> std::io::Result<()> {
     if let Some(alt_text) = &content.alt_text() {
-        write!(w.w, "[")?;
-        write_inlines(w, alt_text.inner())?;
-        write!(w.w, "](")?;
+        write!(w.w, "[{}]", alt_text.inner())?;
     } else {
         write!(w.w, "<")?;
     }

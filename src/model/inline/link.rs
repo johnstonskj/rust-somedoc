@@ -1,4 +1,4 @@
-use crate::model::inline::{Anchor, HasInlineContent, InlineContent, Span};
+use crate::model::inline::{Anchor, InlineContent, Text};
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
@@ -19,7 +19,7 @@ pub enum HyperLinkTarget {
 #[derive(Clone, Debug)]
 pub struct HyperLink {
     target: HyperLinkTarget,
-    alt_text: Option<Span>,
+    alt_text: Option<Text>,
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -39,34 +39,34 @@ impl HyperLink {
         Self::new_external(target, None)
     }
 
-    pub fn external_with_label(target: &str, alt_text: Span) -> Self {
+    pub fn external_with_label(target: &str, alt_text: Text) -> Self {
         Self::new_external(target, Some(alt_text))
     }
 
     pub fn external_with_label_str(target: &str, alt_text: &str) -> Self {
-        Self::new_external(target, Some(Span::plain_str(alt_text)))
+        Self::new_external(target, Some(alt_text.into()))
     }
 
     pub fn internal(target: Anchor) -> Self {
         Self::new_internal(target, None)
     }
 
-    pub fn internal_with_label(target: Anchor, alt_text: Span) -> Self {
+    pub fn internal_with_label(target: Anchor, alt_text: Text) -> Self {
         Self::new_internal(target, Some(alt_text))
     }
 
     pub fn internal_with_label_str(target: Anchor, alt_text: &str) -> Self {
-        Self::new_internal(target, Some(Span::plain_str(alt_text)))
+        Self::new_internal(target, Some(alt_text.into()))
     }
 
-    fn new_external(target: &str, alt_text: Option<Span>) -> Self {
+    fn new_external(target: &str, alt_text: Option<Text>) -> Self {
         Self {
             target: HyperLinkTarget::External(target.to_string()),
             alt_text,
         }
     }
 
-    fn new_internal(target: Anchor, alt_text: Option<Span>) -> Self {
+    fn new_internal(target: Anchor, alt_text: Option<Text>) -> Self {
         Self {
             target: HyperLinkTarget::Internal(target),
             alt_text,
@@ -99,7 +99,7 @@ impl HyperLink {
         self.alt_text.is_some()
     }
 
-    pub fn alt_text(&self) -> &Option<Span> {
+    pub fn alt_text(&self) -> &Option<Text> {
         &self.alt_text
     }
 }

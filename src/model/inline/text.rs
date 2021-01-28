@@ -1,6 +1,8 @@
 use crate::error;
+use crate::model::inline::Character;
 use crate::model::inline::{HasInlineContent, InlineContent};
 use crate::model::{HasInnerContent, HasStyles, Style};
+use std::ops::Deref;
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
@@ -95,9 +97,22 @@ impl From<&str> for Text {
     }
 }
 
+impl Deref for Text {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 inline_impls!(Text);
 
 impl Text {
+    /// Create a new Text instance from the string.
+    pub fn new(s: &str) -> Self {
+        Self(s.to_string())
+    }
+
     /// Return a reference to the inner string.
     pub fn inner(&self) -> &String {
         &self.0
@@ -151,5 +166,9 @@ impl Span {
             inner: vec![inner],
             styles: vec![style],
         }
+    }
+
+    pub fn space() -> Self {
+        Self::new_inner(Character::Space.into())
     }
 }

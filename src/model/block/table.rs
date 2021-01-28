@@ -1,5 +1,5 @@
 use crate::error;
-use crate::model::block::BlockContent;
+use crate::model::block::{BlockContent, Caption, Captioned};
 use crate::model::inline::HasInlineContent;
 use crate::model::inline::{Character, InlineContent};
 use crate::model::HasInnerContent;
@@ -26,6 +26,7 @@ pub enum Alignment {
 pub struct Table {
     columns: Vec<Column>,
     rows: Vec<Row>,
+    caption: Option<Caption>,
 }
 
 ///
@@ -70,17 +71,21 @@ impl Default for Table {
         Self {
             columns: Default::default(),
             rows: Default::default(),
+            caption: None,
         }
     }
 }
 
 block_impls!(Table);
 
+has_captioned_impls!(Table);
+
 impl Table {
     pub fn new(columns: &[Column]) -> Self {
         Self {
             columns: columns.to_vec(),
             rows: Default::default(),
+            caption: None,
         }
     }
 

@@ -18,8 +18,6 @@ pub enum Alignment {
     Justified,
 }
 
-// TODO: line blocks <https://pandoc.org/MANUAL.html#line-blocks>
-
 ///
 /// The styles for the paragraph.
 ///
@@ -77,7 +75,11 @@ has_inline_impls!(Paragraph);
 has_styles_impls!(Paragraph, ParagraphStyle);
 
 impl Paragraph {
-    pub fn new(inner: &str, style: ParagraphStyle) -> Self {
+    pub fn new(inner: &str) -> Self {
+        Self::new_with_style(inner, ParagraphStyle::default())
+    }
+
+    pub fn new_with_style(inner: &str, style: ParagraphStyle) -> Self {
         Self {
             inner: vec![Span::plain_str(inner).into()],
             styles: vec![style],

@@ -88,7 +88,7 @@ pub fn write_document<W: Write>(
     doc: &Document,
     format: OutputFormat,
     w: &mut W,
-) -> std::io::Result<()> {
+) -> crate::error::Result<()> {
     match format {
         OutputFormat::Markdown(flavor) => markdown::writer::<W>(doc, flavor, w),
         OutputFormat::XWiki => xwiki::writer(doc, w),
@@ -99,7 +99,10 @@ pub fn write_document<W: Write>(
 /// A convenience function that will return a String containing the output of the `write_document`
 /// function for the given `Document` instance.
 ///
-pub fn write_document_to_string(doc: &Document, format: OutputFormat) -> std::io::Result<String> {
+pub fn write_document_to_string(
+    doc: &Document,
+    format: OutputFormat,
+) -> crate::error::Result<String> {
     use std::io::Cursor;
     let mut buffer = Cursor::new(Vec::new());
     write_document(doc, format, &mut buffer)?;
@@ -148,3 +151,5 @@ impl FromStr for OutputFormat {
 pub mod markdown;
 
 pub mod xwiki;
+
+mod common;

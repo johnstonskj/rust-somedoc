@@ -2,6 +2,7 @@ use crate::error;
 use crate::model::block::BlockContent;
 use crate::model::inline::{HasInlineContent, InlineContent, Text};
 use crate::model::HasInnerContent;
+use std::convert::TryFrom;
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
@@ -13,13 +14,13 @@ use crate::model::HasInnerContent;
 #[derive(Clone, Debug, PartialEq)]
 #[repr(u8)]
 pub enum HeadingLevel {
-    Title = 0,
-    Section,
+    Section = 1,
     SubSection,
     SubSubSection,
     SubSubSubSection,
     SubSubSubSubSection,
-    Paragraph,
+    SubSubSubSubSubSection,
+    SubSubSubSubSubSubSection,
 }
 
 ///
@@ -53,6 +54,23 @@ impl Default for Heading {
     }
 }
 
+impl TryFrom<u8> for HeadingLevel {
+    type Error = ();
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            1 => Ok(HeadingLevel::Section),
+            2 => Ok(HeadingLevel::SubSection),
+            3 => Ok(HeadingLevel::SubSubSection),
+            4 => Ok(HeadingLevel::SubSubSubSection),
+            5 => Ok(HeadingLevel::SubSubSubSubSection),
+            6 => Ok(HeadingLevel::SubSubSubSubSubSection),
+            7 => Ok(HeadingLevel::SubSubSubSubSubSubSection),
+            _ => Err(()),
+        }
+    }
+}
+
 block_impls!(Heading);
 
 has_inline_impls!(Heading);
@@ -63,10 +81,6 @@ impl Heading {
             level: kind,
             inner: vec![Text::from(inner).into()],
         }
-    }
-
-    pub fn title(inner: &str) -> Self {
-        Self::new(inner, HeadingLevel::Title)
     }
 
     pub fn section(inner: &str) -> Self {
@@ -85,12 +99,12 @@ impl Heading {
         Self::new(inner, HeadingLevel::SubSubSubSection)
     }
 
-    pub fn sub_sub_sub_sub_section(inner: &str) -> Self {
-        Self::new(inner, HeadingLevel::SubSubSubSubSection)
+    pub fn sub_sub_sub_sub_sub_section(inner: &str) -> Self {
+        Self::new(inner, HeadingLevel::SubSubSubSubSubSection)
     }
 
-    pub fn paragraph(inner: &str) -> Self {
-        Self::new(inner, HeadingLevel::Paragraph)
+    pub fn sub_sub_sub_sub_sub_sub_section(inner: &str) -> Self {
+        Self::new(inner, HeadingLevel::SubSubSubSubSubSubSection)
     }
 
     // --------------------------------------------------------------------------------------------

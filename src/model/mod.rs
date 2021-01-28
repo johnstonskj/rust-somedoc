@@ -106,4 +106,4 @@ pub mod inline;
 
 pub mod block;
 
-//pub mod visitor;
+pub mod visitor;

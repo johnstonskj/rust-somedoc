@@ -23,6 +23,8 @@ pub enum InlineContent {
     Image(Image),
     /// Plain text.
     Text(Text),
+    /// Inline formatted math formula.
+    Math(Math),
     /// A single character.
     Character(Character),
     /// A break within a set of inline content.
@@ -355,12 +357,16 @@ pub mod anchor;
 pub use anchor::Anchor;
 
 #[doc(hidden)]
+pub mod image;
+pub use image::Image;
+
+#[doc(hidden)]
 pub mod link;
 pub use link::{HyperLink, HyperLinkTarget};
 
 #[doc(hidden)]
-pub mod image;
-pub use image::Image;
+pub mod math;
+pub use math::Math;
 
 #[doc(hidden)]
 pub mod text;

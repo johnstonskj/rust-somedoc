@@ -107,6 +107,12 @@ println!("{}", doc_str);
 
 ## Changes
 
+**Version 0.2.0**
+
+* Added new `Math` (inline), and `MathBlock` (block) constructs.
+* Added new `Caption` type and implementation for `Code`, `MathBlock`, and `Table`.
+* Added `Deref` for some String newtypes (`Anchor`, `Caption`, `Emoji`, and `Text`).
+
 **Version 0.1.7**
 
 * Fixed a bug in HeadingLevel/markdown generation.
@@ -121,7 +127,7 @@ println!("{}", doc_str);
 * Removed the `model::visitor` module, too many changes to stabilize yet.
 * Fixed a bug in XWiki `write_code` function.
 * Added `model::inline::emoji_names` module, but only enabled for `emoji_names` feature.
-* Adding test cases.
+* Adding some initial test cases.
 
 **Version 0.1.5 (not published)**
 
@@ -150,3 +156,13 @@ println!("{}", doc_str);
 * Initial commit. Basic model working, initial Markdown and XWiki writers.
 
 ## TODO
+
+* Put the visitors back.
+* Investigate new writers,
+  * LaTeX
+  * HTML
+  * RTF,
+* Investigate math support in some form.
+* Investigate float hints.
+* Investigate glossary, acronym, and bib support.
+* Add macros for all document generation.
