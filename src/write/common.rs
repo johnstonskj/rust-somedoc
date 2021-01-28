@@ -7,6 +7,8 @@ More detailed description, with
 
 */
 
+#![allow(dead_code)]
+
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 

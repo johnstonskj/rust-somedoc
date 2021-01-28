@@ -1,9 +1,20 @@
 /*!
-One-line description.
-
-More detailed description, with
+This module provides a set of traits for implementing model visitors as well as the function
+`walk_document` that walks a visitor over a specific `Document`.
 
 # Example
+
+The following is a version of the actual function provided by the `write::xwiki` module and
+shows how the writer has been implemented as a visitor.
+
+```rust,ignore
+pub fn writer<W: Write>(doc: &Document, w: &mut W) -> crate::error::Result<()> {
+    info!("xwiki::writer(.., ..)");
+    let writer = XWikiWriter::new(w);
+    walk_document(doc, &writer)?;
+    Ok(())
+}
+```
 
 */
 
@@ -22,20 +33,27 @@ use crate::model::{Document, HasStyles};
 // Public Types
 // ------------------------------------------------------------------------------------------------
 
+///
+/// The visitor trait for a `Document` instance.
+///
 #[allow(unused_variables)]
 pub trait DocumentVisitor {
+    /// Called at the start of each `Document` instance, before any inner content.
     fn start_document(&self) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Visit each `Metadata` instance.
     fn metadata(&self, metadatum: &Metadata) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Return an implementation of the `BlockVisitor` trait, if one exists.
     fn block_visitor(&self) -> Option<&dyn BlockVisitor> {
         None
     }
 
+    /// Called at the end of each `Document` instance, after any inner content.
     fn end_document(&self) -> crate::error::Result<()> {
         Ok(())
     }
@@ -43,108 +61,137 @@ pub trait DocumentVisitor {
 
 // ------------------------------------------------------------------------------------------------
 
+///
+/// The visitor trait for all block content instances.
+///
 #[allow(unused_variables)]
 pub trait BlockVisitor {
+    /// Called at the start of each `BlockContent` instance, before any value.
     fn start_block(&self) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Visit each `BlockContent::Comment` instance.
     fn comment(&self, value: &str) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Called at the start of each `BlockContent::Heading` instance, before any inner content.
     fn start_heading(&self, level: &HeadingLevel) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Called at the end of each `BlockContent::Heading` instance, after any inner content.
     fn end_heading(&self, level: &HeadingLevel) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Visit each `BlockContent::Image` instance.
     fn image(&self, value: &Image) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Visit each `BlockContent::MathBlock` instance.
     fn math(&self, value: &MathBlock) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Called at the start of each `BlockContent::List` instance, before any inner content.
     fn start_list(&self, kind: &ListKind) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Called at the start of each `BlockContent::List` instance, before any inner content.
     fn end_list(&self, kind: &ListKind) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Called at the start of each `Item` instance, before any inner content.
     fn start_list_item(&self) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Called at the end of each `Item` instance, after any inner content.
     fn end_list_item(&self) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Called at the start of each `BlockContent::DefinitionList` instance, before any inner content.
     fn start_definition_list(&self) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Called at the end of each `BlockContent::DefinitionList` instance, after any inner content.
     fn end_definition_list(&self) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Called at the start of each `Definition` instance `term`, before any inner content.
     fn start_definition_list_term(&self) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Called at the end of each `Definition` instance `term`, after any inner content.
     fn end_definition_list_term(&self) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Called at the start of each `Definition` instance `text`, before any inner content.
     fn start_definition_list_text(&self) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Called at the end of each `Definition` instance `text`, after any inner content.
     fn end_definition_list_text(&self) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Visit each `BlockContent::Formatted` instance.
     fn formatted(&self, value: &Formatted) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Visit each `BlockContent::CodeBlock` instance.
     fn code_block(&self, value: &CodeBlock) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Called at the start of each `BlockContent::Paragraph` instance, before any inner content.
     fn start_paragraph(&self, styles: &Vec<ParagraphStyle>) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Called at the end of each `BlockContent::Paragraph` instance, after any inner content.
     fn end_paragraph(&self, styles: &Vec<ParagraphStyle>) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Called at the start of each `BlockContent::Quote` instance, before any inner content.
     fn start_quote(&self) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Called at the end of each `BlockContent::Quote` instance, after any inner content.
     fn end_quote(&self) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Visit each `BlockContent::ThematicBreak` instance.
     fn thematic_break(&self) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Called at the end of each `BlockContent` instance, after any value.
     fn end_block(&self) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Return an implementation of the `TableVisitor` trait, if one exists.
     fn table_visitor(&self) -> Option<&dyn TableVisitor> {
         None
     }
 
+    /// Return an implementation of the `InlineVisitor` trait, if one exists.
     fn inline_visitor(&self) -> Option<&dyn InlineVisitor> {
         None
     }
@@ -152,44 +199,61 @@ pub trait BlockVisitor {
 
 // ------------------------------------------------------------------------------------------------
 
+///
+/// The visitor trait for all `Table` instances.
+///
 #[allow(unused_variables)]
 pub trait TableVisitor {
+    /// Called at the start of each `Table` instance, before any values.
     fn start_table(&self, caption: &Option<Caption>) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Called at the start of each `Table`'s header row, before any cells.
     fn start_table_header_row(&self) -> crate::error::Result<()> {
         Ok(())
     }
 
-    fn table_header_cell(&self, cell: &Column, column: usize) -> crate::error::Result<()> {
+    /// Visit each `Column` instance, with it's position.
+    fn table_header_cell(
+        &self,
+        column_cell: &Column,
+        column_idx: usize,
+    ) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Called at the end of each `Table`'s header row, after any cells.
     fn end_table_header_row(&self) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Called at the start of each `Table`'s body row, before any cells.
     fn start_table_row(&self, row: usize) -> crate::error::Result<()> {
         Ok(())
     }
 
-    fn start_table_cell(&self, column: usize) -> crate::error::Result<()> {
+    /// Called at the start of each `Cell` instance, before any inner content.
+    fn start_table_cell(&self, column_idx: usize) -> crate::error::Result<()> {
         Ok(())
     }
 
-    fn end_table_cell(&self, column: usize) -> crate::error::Result<()> {
+    /// Called at the end of each `Cell` instance, after any inner content.
+    fn end_table_cell(&self, column_idx: usize) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Called at the end of each `Table`'s body row, after any cells.
     fn end_table_row(&self, row: usize) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Called at the end of each `Table` instance, after any values.
     fn end_table(&self, caption: &Option<Caption>) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Return an implementation of the `InlineVisitor` trait, if one exists.
     fn inline_visitor(&self) -> Option<&dyn InlineVisitor> {
         None
     }
@@ -197,53 +261,64 @@ pub trait TableVisitor {
 
 // ------------------------------------------------------------------------------------------------
 
+///
+/// The visitor trait for all inline content instances.
+///
 #[allow(unused_variables)]
 pub trait InlineVisitor {
+    /// Visit each `InlineContent::Anchor` instance.
     fn anchor(&self, value: &Anchor) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Visit each `InlineContent::HyperLink` instance.
     fn link(&self, value: &HyperLink) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Visit each `InlineContent::Image` instance.
     fn image(&self, value: &Image) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Visit each `InlineContent::Text` instance.
     fn text(&self, value: &Text) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Visit each `InlineContent::Math` instance.
     fn math(&self, value: &Math) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Visit each `InlineContent::Character` instance.
     fn character(&self, value: &Character) -> crate::error::Result<()> {
         Ok(())
     }
 
-    fn start_span(&self, styles: &Vec<SpanStyle>) -> crate::error::Result<()> {
-        Ok(())
-    }
-
+    /// Visit each `InlineContent::LineBreak` instance.
     fn line_break(&self) -> crate::error::Result<()> {
         Ok(())
     }
 
+    /// Called at the start of each `InlineContent::Span` instance, before any inner content.
+    fn start_span(&self, styles: &Vec<SpanStyle>) -> crate::error::Result<()> {
+        Ok(())
+    }
+
+    /// Called at the end of each `InlineContent::Span` instance, after any inner content.
     fn end_span(&self, styles: &Vec<SpanStyle>) -> crate::error::Result<()> {
         Ok(())
     }
 }
 
 // ------------------------------------------------------------------------------------------------
-// Private Types
-// ------------------------------------------------------------------------------------------------
-
-// ------------------------------------------------------------------------------------------------
 // Public Functions
 // ------------------------------------------------------------------------------------------------
 
+///
+/// Walk the specified `visitor` over the provided `doc`.
+///
 pub fn walk_document(doc: &Document, visitor: &impl DocumentVisitor) -> crate::error::Result<()> {
     visitor.start_document()?;
 
@@ -257,10 +332,6 @@ pub fn walk_document(doc: &Document, visitor: &impl DocumentVisitor) -> crate::e
 
     visitor.end_document()
 }
-
-// ------------------------------------------------------------------------------------------------
-// Implementations
-// ------------------------------------------------------------------------------------------------
 
 // ------------------------------------------------------------------------------------------------
 // Private Functions
