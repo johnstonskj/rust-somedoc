@@ -10,6 +10,8 @@ use somedoc::write::{write_document_to_string, OutputFormat};
 fn main() {
     let mut doc = Document::default();
 
+    let _ = doc.set_title("Scheme: Clothing shapes, patterns, and details");
+    let _ = doc.add_author_str("Simon", None, None);
     doc.add_heading(Heading::section(
         "Scheme: Clothing shapes, patterns, and details",
     ));
@@ -87,5 +89,8 @@ fn main() {
     println!("{}", md);
 
     let xw = write_document_to_string(&doc, OutputFormat::XWiki).unwrap();
+    println!("{}", xw);
+
+    let xw = write_document_to_string(&doc, OutputFormat::Html).unwrap();
     println!("{}", xw);
 }

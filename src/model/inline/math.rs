@@ -12,9 +12,6 @@ use std::str::FromStr;
 #[derive(Clone, Debug)]
 pub struct Math(String);
 
-#[derive(Clone, Debug)]
-pub struct MathBuilder;
-
 // ------------------------------------------------------------------------------------------------
 // Implementations
 // ------------------------------------------------------------------------------------------------
@@ -57,4 +54,34 @@ impl Math {
     pub fn into_inner(self) -> String {
         self.0
     }
+}
+
+// ------------------------------------------------------------------------------------------------
+
+#[cfg(feature = "math_builder")]
+mod builder {
+    use std::fmt::{Display, Formatter};
+
+    #[derive(Clone, Debug)]
+    pub struct MathBuilder(Vec<String>);
+
+    impl Default for MathBuilder {
+        fn default() -> Self {
+            Self(Default::default())
+        }
+    }
+
+    impl Display for MathBuilder {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{}", self.0.join(""))
+        }
+    }
+
+    impl Into<Math> for MathBuilder {
+        fn into(self) -> Math {
+            Math(self.to_string())
+        }
+    }
+
+    impl MathBuilder {}
 }

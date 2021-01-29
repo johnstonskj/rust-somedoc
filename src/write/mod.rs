@@ -65,16 +65,9 @@ pub enum OutputFormat {
 
     // The XWiki native syntax.
     XWiki,
-}
 
-// type WriterFn<W: Write> = dyn Fn(&Document, &mut W) -> std::io::Result<()>;
-//
-// type FlavoredWriterFn<E: Default, W: Write> = dyn Fn(&Document, E, &mut W) -> std::io::Result<()>;
-//
-// pub enum Writer<E: Default, W: Write> {
-//     Writer(Box<WriterFn<W>>),
-//     FlavoredWriter(Box<FlavoredWriterFn<E, W>>),
-// }
+    Html,
+}
 
 // ------------------------------------------------------------------------------------------------
 // Public Functions
@@ -92,6 +85,7 @@ pub fn write_document<W: Write>(
     match format {
         OutputFormat::Markdown(flavor) => markdown::writer::<W>(doc, flavor, w),
         OutputFormat::XWiki => xwiki::writer(doc, w),
+        OutputFormat::Html => html::writer(doc, w),
     }
 }
 
@@ -126,7 +120,8 @@ impl Display for OutputFormat {
             "{}",
             match self {
                 Self::Markdown(f) => format!("markdown+{}", f),
-                OutputFormat::XWiki => "xwiki".to_string(),
+                Self::XWiki => "xwiki".to_string(),
+                Self::Html => "html".to_string(),
             }
         )
     }
@@ -139,6 +134,7 @@ impl FromStr for OutputFormat {
         match s {
             "md" | "markdown" => Ok(Self::Markdown(Default::default())),
             "xwiki" => Ok(Self::XWiki),
+            "html" => Ok(Self::Html),
             _ => Err(error::ErrorKind::UnknownFormat.into()),
         }
     }
@@ -147,6 +143,8 @@ impl FromStr for OutputFormat {
 // ------------------------------------------------------------------------------------------------
 // Modules
 // ------------------------------------------------------------------------------------------------
+
+pub mod html;
 
 pub mod markdown;
 

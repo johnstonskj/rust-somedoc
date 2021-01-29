@@ -432,18 +432,6 @@ fn write_metadatum<W: Write>(w: &mut MarkdownWriter<W>, datum: &Metadata) -> std
                 )?;
             }
         }
-        Metadata::SubTitle(value) => {
-            if w.features.metadata == MetadataFlavor::HiddenLinks {
-                write_as_link(w.w, "subtitle", value)?;
-            } else {
-                write_as_prop(
-                    w.w,
-                    "subtitle",
-                    value,
-                    w.features.metadata == MetadataFlavor::PercentComment,
-                )?;
-            }
-        }
         Metadata::Title(value) => {
             if w.features.metadata == MetadataFlavor::HiddenLinks {
                 write_as_link(w.w, "title", value)?;
@@ -726,8 +714,8 @@ fn write_span<W: Write>(w: &mut MarkdownWriter<W>, content: &Span) -> std::io::R
                 style_stack.clear();
                 ""
             }
-            SpanStyle::Italic | SpanStyle::Slanted => SPAN_ITALIC,
             SpanStyle::Bold => SPAN_BOLD,
+            SpanStyle::Italic => SPAN_ITALIC,
             SpanStyle::Mono | SpanStyle::Code => "`",
             SpanStyle::Strikethrough => {
                 if w.features.has_strikethrough {

@@ -192,18 +192,6 @@ pub trait HasInlineContent: Default + HasInnerContent<InlineContent> {
         Self::span(Span::new_with_style(inner, SpanStyle::Italic))
     }
 
-    /// Create a new inline content container as a `Span`, with `TextStyle::Slanted` applied to the
-    /// provided content.
-    fn slanted(inner: InlineContent) -> Self {
-        Self::span(Span::new_inner_with_style(inner, SpanStyle::Slanted))
-    }
-
-    /// Create a new inline content container as a `Span`, with `TextStyle::Slanted` applied to the
-    /// provided string as a `Text` instance.
-    fn slanted_str(inner: &str) -> Self {
-        Self::span(Span::new_with_style(inner, SpanStyle::Slanted))
-    }
-
     /// Create a new inline content container as a `Span`, with `TextStyle::Bold` applied to the
     /// provided content.
     fn bold(inner: InlineContent) -> Self {

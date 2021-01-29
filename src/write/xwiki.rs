@@ -281,6 +281,7 @@ impl<'a, W: Write> BlockVisitor for XWikiWriter<'a, W> {
 impl<'a, W: Write> InlineVisitor for XWikiWriter<'a, W> {
     fn anchor(&self, value: &Anchor) -> crate::error::Result<()> {
         let mut w = self.w.borrow_mut();
+        // alternatively: {{id name="value" /}}
         write!(w, "(% id=\"{}\" %)", value.inner())?;
         Ok(())
     }
@@ -344,11 +345,19 @@ impl<'a, W: Write> InlineVisitor for XWikiWriter<'a, W> {
         Ok(())
     }
 
+    fn line_break(&self) -> crate::error::Result<()> {
+        let mut w = self.w.borrow_mut();
+        write!(w, "\\")?;
+        self.end_line(&mut w)?;
+        self.start_line(&mut w)?;
+        Ok(())
+    }
+
     fn start_span(&self, styles: &Vec<SpanStyle>) -> crate::error::Result<()> {
         for style in styles {
             let delim: &str = match style {
                 SpanStyle::Plain => "",
-                SpanStyle::Italic | SpanStyle::Slanted => "//",
+                SpanStyle::Italic => "//",
                 SpanStyle::Bold => "**",
                 SpanStyle::Mono | SpanStyle::Code => "##",
                 SpanStyle::Strikethrough => "--",
@@ -366,19 +375,11 @@ impl<'a, W: Write> InlineVisitor for XWikiWriter<'a, W> {
         Ok(())
     }
 
-    fn line_break(&self) -> crate::error::Result<()> {
-        let mut w = self.w.borrow_mut();
-        write!(w, "\\")?;
-        self.end_line(&mut w)?;
-        self.start_line(&mut w)?;
-        Ok(())
-    }
-
     fn end_span(&self, styles: &Vec<SpanStyle>) -> crate::error::Result<()> {
         for style in styles.iter().rev() {
             let delim: &str = match style {
                 SpanStyle::Plain => "",
-                SpanStyle::Italic | SpanStyle::Slanted => "//",
+                SpanStyle::Italic => "//",
                 SpanStyle::Bold => "**",
                 SpanStyle::Mono | SpanStyle::Code => "##",
                 SpanStyle::Strikethrough => "--",

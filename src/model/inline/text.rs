@@ -16,7 +16,6 @@ use std::ops::Deref;
 pub enum SpanStyle {
     Plain,
     Italic,
-    Slanted,
     Bold,
     Mono,
     Code,

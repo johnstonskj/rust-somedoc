@@ -29,8 +29,6 @@ pub enum Metadata {
     Revision(String),
     /// The publication status of this document.
     Status(String),
-    /// This document's subtitle.
-    SubTitle(String),
     /// This document's title.
     Title(String),
     /// An unknown property.
@@ -137,11 +135,6 @@ impl Document {
 
     pub fn set_title(&mut self, v: &str) -> error::Result<&mut Self> {
         self.add_metadata(Metadata::Title(v.to_string()))?;
-        Ok(self)
-    }
-
-    pub fn set_subtitle(&mut self, v: &str) -> error::Result<&mut Self> {
-        self.add_metadata(Metadata::SubTitle(v.to_string()))?;
         Ok(self)
     }
 
