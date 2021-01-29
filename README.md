@@ -109,6 +109,8 @@ println!("{}", doc_str);
 
 **Version 0.2.0**
 
+* Added new visitor traits and migrated the `XWiki` writer to use it.
+* Added new HTML writer using the new visitor traits.
 * Added new `Math` (inline), and `MathBlock` (block) constructs.
 * Added new `Caption` type and implementation for `Code`, `MathBlock`, and `Table`.
 * Added `Deref` for some String newtypes (`Anchor`, `Caption`, `Emoji`, and `Text`).
@@ -157,10 +159,8 @@ println!("{}", doc_str);
 
 ## TODO
 
-* Put the visitors back.
 * Investigate new writers,
   * LaTeX
-  * HTML
   * RTF,
 * Investigate math support in some form.
 * Investigate float hints.
