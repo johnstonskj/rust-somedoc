@@ -60,6 +60,7 @@ impl Math {
 
 #[cfg(feature = "math_builder")]
 mod builder {
+    use super::Math;
     use std::fmt::{Display, Formatter};
 
     #[derive(Clone, Debug)]
