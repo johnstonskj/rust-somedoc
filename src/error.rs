@@ -2,6 +2,8 @@
 Common `Error`, `ErrorKind`, and `Result` types.
 */
 
+#![allow(missing_docs)]
+
 error_chain! {
     errors {
         #[doc = "An empty string is not allowed here."]

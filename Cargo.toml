@@ -1,6 +1,6 @@
 [package]
 name = "somedoc"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Simon Johnston <johnstonskj@gmail.com>"]
 edition = "2018"
 description = "A very simple document model and markup generator."
@@ -11,6 +11,10 @@ readme = "README.md"
 publish = true
 
 [features]
+default = ["fmt_html", "fmt_latex", "fmt_markdown"]
+fmt_html = []
+fmt_latex = []
+fmt_markdown = []
 math_builder = []
 emoji_names = []
 
@@ -22,11 +26,11 @@ targets = ["x86_64-unknown-linux-gnu"]
 [dependencies]
 error-chain = "0.12.2"
 lazy_static = "1.4.0"
-log = "0.4.11"
 regex = "1.4.2"
 
 [dev-dependencies]
 proptest = "0.10.1"
+pretty_assertions = "0.6.1"
 
 [dev-dependencies.cargo-husky]
 version = "1"

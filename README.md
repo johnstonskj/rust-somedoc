@@ -107,29 +107,55 @@ println!("{}", doc_str);
 
 ## Changes
 
+
+**Version 0.2.1**
+
+This is a significant update, some APIs will have changed, but the plan is that these new
+API forms will be stabilized toward a 0.3.0 release that can be relied on for non-breaking
+changes.
+
+* Added: additional features in the HTML writer. It should be complete pending testing.
+* Added: complete writer implementation for LaTeX. It should be complete pending testing.
+* Added: configuration features for each writer, `fmt_html`, `fmt_latex`, fmt_markdown`,
+  etc. with the default feature including all of these.
+* Added: `Writer`, and `ConfigurableWriter` to the `write` module to capture the
+  instantiation of a writer struct.
+* Added: more library/API documentation, but not all yet.  
+* Refactor: combined all markdown-like formats into a common module.
+* Refactor: moved the `Anchor` type to a new `Label`, it is no longer a stand-alone inline
+  value, but has been added as a property to most block types.
+* Refactor: moved `Abstract` out of the `Metadata` enum and made it a property of the document
+  proper. This also affects the visitor API.
+* Refactor: renamed `label`/`alt_text` on `HyperLink` to `caption`.
+* Clean-up: made the document API easier, removing `Result<>` where it wasn't needed.
+* Clean-up: removed the unused dependency on `log`.
+* Testing: added dependency on `pretty_assertions` for better comparison of test failures.
+* Testing: creating test cases across formats.
+  
 **Version 0.2.0**
 
-* Added new visitor traits and migrated the `XWiki` writer to use it.
-* Added new HTML writer using the new visitor traits.
-* Added new `Math` (inline), and `MathBlock` (block) constructs.
-* Added new `Caption` type and implementation for `Code`, `MathBlock`, and `Table`.
-* Added `Deref` for some String newtypes (`Anchor`, `Caption`, `Emoji`, and `Text`).
+* Added: new visitor traits and migrated the `XWiki` writer to use it.
+* Added: new HTML writer using the new visitor traits.
+* Added: new `Math` (inline), and `MathBlock` (block) constructs.
+* Added: new `Caption` type and implementation for `Code`, `MathBlock`, and `Table`.
+* Added: `Deref` for some String newtypes (`Anchor`, `Caption`, `Emoji`, and `Text`).
+* Testing: using `proptest` for the String newtypes listed above.
 
 **Version 0.1.7**
 
-* Fixed a bug in HeadingLevel/markdown generation.
+* Fixed: fixed a bug in HeadingLevel/markdown generation.
 
 **Version 0.1.6**
 
-* Started on library documentation.
-* Refactored document metadata, and Markdown writer accordingly.
-* Added `readme_maker` example, this is used in the README and lib.rs documentation.
-* Renamed `TextStyle` -> `SpanStyle`, added `Sized` variant.
-* Removed the `read` module as it was currently empty.
-* Removed the `model::visitor` module, too many changes to stabilize yet.
-* Fixed a bug in XWiki `write_code` function.
-* Added `model::inline::emoji_names` module, but only enabled for `emoji_names` feature.
-* Adding some initial test cases.
+* Added: started on library documentation.
+* Added: `model::inline::emoji_names` module, but only enabled for `emoji_names` feature.
+* Added: `readme_maker` example, this is used in the README and lib.rs documentation.
+* Fixed: fixed a bug in XWiki `write_code` function.
+* Refactor: document metadata, and Markdown writer accordingly.
+* Refactor: renamed `TextStyle` -> `SpanStyle`, added `Sized` variant.
+* Clean-up: the `read` module as it was currently empty.
+* Clean-up: femoved the `model::visitor` module, too many changes to stabilize yet.
+* Testing: some initial test cases.
 
 **Version 0.1.5 (not published)**
 

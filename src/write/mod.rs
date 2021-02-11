@@ -10,12 +10,12 @@ then be used in [`write_document`](fn.write_document.html) and
 
 ```rust
 # use somedoc::model::Document;
-use somedoc::write::{write_document_to_string, OutputFormat};
+use somedoc::write::{OutputFormat, write_document_to_string};
 
 # fn make_some_document() -> Document { Document::default() }
 let doc = make_some_document();
 
-let doc_str = write_document_to_string(&doc, OutputFormat::XWiki).unwrap();
+let doc_str = write_document_to_string(&doc, OutputFormat::Latex).unwrap();
 println!("{}", doc_str);
 ```
 
@@ -44,12 +44,13 @@ markdown implementation of `FlavoredWriterFn`.
 
 */
 
-use crate::error;
-use crate::model::Document;
-use crate::write::markdown::MarkdownFlavor;
 use std::fmt::{Display, Formatter};
 use std::io::Write;
 use std::str::FromStr;
+
+use crate::error;
+use crate::model::Document;
+use crate::write::markdown::MarkdownFlavor;
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
@@ -61,12 +62,34 @@ use std::str::FromStr;
 #[derive(Clone, Debug, PartialEq)]
 pub enum OutputFormat {
     /// One of the supported flavors of Markdown, see [`markdown::MarkdownFlavor`](markdown/enum.MarkdownFlavor.html).
+    #[cfg(feature = "fmt_markdown")]
     Markdown(MarkdownFlavor),
 
-    // The XWiki native syntax.
-    XWiki,
-
+    /// Generic HTML, supports math via MathJax and code syntax via hightlight.js.
+    #[cfg(feature = "fmt_html")]
     Html,
+
+    /// Pretty generic LaTeX support, includes a number of packages for support of listings, block
+    /// quotes, images, etc.
+    #[cfg(feature = "fmt_latex")]
+    Latex,
+}
+
+///
+/// This trait can be implemented by a serializer to provide a common instantiation method.
+///
+pub trait Writer<'a, W: Write> {
+    /// Create a new writer using the write implementation provided.
+    fn new(w: &'a mut W) -> Self;
+}
+
+///
+/// This trait can be implemented by a serializer to provide a common instantiation method when
+/// configuration may be passed to the new instance.
+///
+pub trait ConfigurableWriter<'a, W: Write, T: Default> {
+    /// Create a new writer using the write implementation provided, and the configuration value(s).
+    fn new_with(w: &'a mut W, config: T) -> Self;
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -83,9 +106,12 @@ pub fn write_document<W: Write>(
     w: &mut W,
 ) -> crate::error::Result<()> {
     match format {
+        #[cfg(feature = "fmt_markdown")]
         OutputFormat::Markdown(flavor) => markdown::writer::<W>(doc, flavor, w),
-        OutputFormat::XWiki => xwiki::writer(doc, w),
+        #[cfg(feature = "fmt_html")]
         OutputFormat::Html => html::writer(doc, w),
+        #[cfg(feature = "fmt_latex")]
+        OutputFormat::Latex => latex::writer(doc, w),
     }
 }
 
@@ -119,9 +145,12 @@ impl Display for OutputFormat {
             f,
             "{}",
             match self {
-                Self::Markdown(f) => format!("markdown+{}", f),
-                Self::XWiki => "xwiki".to_string(),
+                #[cfg(feature = "fmt_markdown")]
+                Self::Markdown(f) => f.to_string(),
+                #[cfg(feature = "fmt_html")]
                 Self::Html => "html".to_string(),
+                #[cfg(feature = "fmt_latex")]
+                Self::Latex => "latex".to_string(),
             }
         )
     }
@@ -132,9 +161,14 @@ impl FromStr for OutputFormat {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "md" | "markdown" => Ok(Self::Markdown(Default::default())),
-            "xwiki" => Ok(Self::XWiki),
+            #[cfg(feature = "fmt_markdown")]
+            "md" | "markdown" => Ok(Self::Markdown(MarkdownFlavor::GitHub)),
+            #[cfg(feature = "fmt_markdown")]
+            "xwiki" => Ok(Self::Markdown(MarkdownFlavor::XWiki)),
+            #[cfg(feature = "fmt_html")]
             "html" => Ok(Self::Html),
+            #[cfg(feature = "fmt_latex")]
+            "latex" => Ok(Self::Latex),
             _ => Err(error::ErrorKind::UnknownFormat.into()),
         }
     }
@@ -144,10 +178,13 @@ impl FromStr for OutputFormat {
 // Modules
 // ------------------------------------------------------------------------------------------------
 
+#[cfg(feature = "fmt_html")]
 pub mod html;
 
+#[cfg(feature = "fmt_latex")]
+pub mod latex;
+
+#[cfg(feature = "fmt_markdown")]
 pub mod markdown;
 
-pub mod xwiki;
-
-mod common;
+pub(crate) mod utils;

@@ -4,69 +4,25 @@
 
 #[doc(hidden)]
 #[macro_export]
-macro_rules! doc {
-    ($statements:block) => {{
-        let mut doc = Document::default();
+macro_rules! label_impl {
+    ($name:ident) => {
+        impl HasLabel for $name {
+            fn has_label(&self) -> bool {
+                self.label.is_some()
+            }
 
-        $statements
+            fn label(&self) -> &Option<Label> {
+                &self.label
+            }
 
-        doc
-    }};
-}
+            fn set_label(&mut self, label: Label) {
+                self.label = Some(label)
+            }
 
-/// Create a new `Span` with the provided text and the style `TextStyle::Bold`.
-#[macro_export]
-macro_rules! textbf {
-    ($s:expr) => {
-        Span::bold($s);
-    };
-}
-
-/// Create a new `Span` with the provided text and the style `TextStyle::Italic`.
-#[macro_export]
-macro_rules! textit {
-    ($s:expr) => {
-        Span::italic($s);
-    };
-}
-
-/// Create a new `Span` with the provided text and the style `TextStyle::Slanted`.
-#[macro_export]
-macro_rules! textsl {
-    ($s:expr) => {
-        Span::slanted($s);
-    };
-}
-
-/// Create a new `Span` with the provided text and the style `TextStyle::Mono`.
-#[macro_export]
-macro_rules! texttt {
-    ($s:expr) => {
-        Span::mono($s);
-    };
-}
-
-/// Create a new `Span` with the provided text and the style `TextStyle::Plain`.
-#[macro_export]
-macro_rules! text {
-    ($s:expr) => {
-        Span::plain($s);
-    };
-}
-
-/// Create a new `Span` with the provided text and the style `TextStyle::SmallCaps`.
-#[macro_export]
-macro_rules! textsc {
-    ($s:expr) => {
-        Span::small_caps($s);
-    };
-}
-
-/// Create a new `Span` with the provided text and the style `TextStyle::Strikethrough`.
-#[macro_export]
-macro_rules! strike {
-    ($s:expr) => {
-        Span::strikethrough($s);
+            fn unset_label(&mut self) {
+                self.label = None
+            }
+        }
     };
 }
 

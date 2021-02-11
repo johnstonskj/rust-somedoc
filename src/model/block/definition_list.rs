@@ -1,7 +1,7 @@
 use crate::error;
-use crate::model::block::BlockContent;
+use crate::model::block::{BlockContent, Label};
 use crate::model::inline::{HasInlineContent, InlineContent};
-use crate::model::HasInnerContent;
+use crate::model::{block::HasLabel, HasInnerContent};
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
@@ -20,6 +20,7 @@ use crate::model::HasInnerContent;
 ///
 #[derive(Clone, Debug)]
 pub struct DefinitionList {
+    label: Option<Label>,
     inner: Vec<DefinitionListItem>,
 }
 
@@ -37,6 +38,7 @@ pub enum DefinitionListItem {
 ///
 #[derive(Clone, Debug)]
 pub struct Definition {
+    label: Option<Label>,
     term: DefinitionPart,
     text: DefinitionPart,
 }
@@ -56,20 +58,42 @@ pub struct DefinitionPart {
 impl Default for DefinitionList {
     fn default() -> Self {
         Self {
+            label: None,
             inner: Default::default(),
         }
     }
 }
 
+label_impl!(DefinitionList);
+
 block_impls!(DefinitionList);
 
 impl DefinitionList {
+    pub fn has_inner(&self) -> bool {
+        !self.inner.is_empty()
+    }
+
     pub fn inner(&self) -> &Vec<DefinitionListItem> {
         &self.inner
     }
 
-    pub fn add_item(&mut self, item: DefinitionListItem) {
+    // --------------------------------------------------------------------------------------------
+
+    pub fn add_inner(&mut self, item: DefinitionListItem) -> &mut Self {
         self.inner.push(item);
+        self
+    }
+
+    pub fn add_definition(&mut self, item: Definition) -> &mut Self {
+        self.add_inner(DefinitionListItem::Item(item))
+    }
+
+    pub fn add_definition_from(&mut self, term: DefinitionPart, text: DefinitionPart) -> &mut Self {
+        self.add_inner(DefinitionListItem::Item(Definition::new(term, text)))
+    }
+
+    pub fn add_sub_list(&mut self, item: DefinitionList) -> &mut Self {
+        self.add_inner(DefinitionListItem::List(item))
     }
 }
 
@@ -78,6 +102,12 @@ impl DefinitionList {
 impl From<DefinitionList> for DefinitionListItem {
     fn from(value: DefinitionList) -> Self {
         Self::List(value)
+    }
+}
+
+impl From<Definition> for DefinitionListItem {
+    fn from(value: Definition) -> Self {
+        Self::Item(value)
     }
 }
 
@@ -99,9 +129,15 @@ impl DefinitionListItem {
 
 // ------------------------------------------------------------------------------------------------
 
+label_impl!(Definition);
+
 impl Definition {
     pub fn new(term: DefinitionPart, text: DefinitionPart) -> Self {
-        Self { term, text }
+        Self {
+            label: None,
+            term,
+            text,
+        }
     }
 
     pub fn term(&self) -> &DefinitionPart {

@@ -1,7 +1,7 @@
 use crate::error;
-use crate::model::block::BlockContent;
+use crate::model::block::{BlockContent, Label};
 use crate::model::inline::{HasInlineContent, InlineContent, Span};
-use crate::model::{HasInnerContent, HasStyles, Style};
+use crate::model::{block::HasLabel, HasInnerContent, HasStyles, Style};
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
@@ -24,7 +24,6 @@ pub enum Alignment {
 #[derive(Clone, Debug, PartialEq)]
 pub enum ParagraphStyle {
     Plain,
-    Abstract,
     Aligned(Alignment),
 }
 
@@ -33,6 +32,7 @@ pub enum ParagraphStyle {
 ///
 #[derive(Clone, Debug)]
 pub struct Paragraph {
+    label: Option<Label>,
     inner: Vec<InlineContent>,
     styles: Vec<ParagraphStyle>,
 }
@@ -57,16 +57,19 @@ impl Default for ParagraphStyle {
 
 impl Style for ParagraphStyle {}
 
+// ------------------------------------------------------------------------------------------------
+
 impl Default for Paragraph {
     fn default() -> Self {
         Self {
+            label: None,
             inner: Default::default(),
             styles: Default::default(),
         }
     }
 }
 
-// ------------------------------------------------------------------------------------------------
+label_impl!(Paragraph);
 
 block_impls!(Paragraph);
 
@@ -81,6 +84,7 @@ impl Paragraph {
 
     pub fn new_with_style(inner: &str, style: ParagraphStyle) -> Self {
         Self {
+            label: None,
             inner: vec![Span::plain_str(inner).into()],
             styles: vec![style],
         }

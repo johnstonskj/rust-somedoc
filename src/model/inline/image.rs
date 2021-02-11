@@ -1,4 +1,4 @@
-use crate::model::block::BlockContent;
+use crate::model::block::{BlockContent, ImageBlock};
 use crate::model::inline::{HyperLink, InlineContent};
 
 // ------------------------------------------------------------------------------------------------
@@ -25,7 +25,7 @@ inline_impls!(Image);
 
 impl Into<BlockContent> for Image {
     fn into(self) -> BlockContent {
-        BlockContent::Image(self)
+        BlockContent::ImageBlock(ImageBlock::new(self))
     }
 }
 

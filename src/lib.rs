@@ -27,22 +27,22 @@
 *         .add_paragraph(Paragraph::plain_str(headline));
 *
 *     let mut para = Paragraph::default();
-*     para.add_image(Image::new(HyperLink::external_with_label_str(
+*     para.add_image(Image::new(HyperLink::external_with_caption_str(
 *         "https://img.shields.io/badge/license-mit-118811.svg",
 *         "MIT License",
 *     )))
-*     .add_image(Image::new(HyperLink::external_with_label_str(
+*     .add_image(Image::new(HyperLink::external_with_caption_str(
 *         "https://img.shields.io/badge/Min%20Rust-1.40-green.svg",
 *         "Build",
 *     )))
-*     .add_image(Image::new(HyperLink::external_with_label_str(
+*     .add_image(Image::new(HyperLink::external_with_caption_str(
 *         &format!(
 *             "https://github.com/{}/{}/workflows/Rust/badge.svg",
 *             repo_owner, repo_name
 *         ),
 *         "Minimum Rust Version",
 *     )))
-*     .add_image(Image::new(HyperLink::external_with_label_str(
+*     .add_image(Image::new(HyperLink::external_with_caption_str(
 *         &format!(
 *             "https://github.com/{}/{}/workflows/Security%20audit/badge.svg",
 *             repo_owner, repo_name
@@ -76,7 +76,7 @@
 *
 * The `somedoc::write` module contains a number of serializers that generate specific markup for different platforms.
 *
-* ### Example
+* ### Examples
 *
 * The following writes a constructed document to `stdout` as a Markdown document. The default flavor supported by
 * the writer is the [CommonMark](https://spec.commonmark.org/0.29/) spec.
@@ -100,29 +100,68 @@
 * ```rust
 * # use somedoc::model::Document;
 * use somedoc::write::{write_document_to_string, OutputFormat};
+* use somedoc::write::markdown::MarkdownFlavor;
 *
 * # fn make_some_document() -> Document { Document::default() }
 * let doc = make_some_document();
 *
-* let doc_str = write_document_to_string(&doc, OutputFormat::XWiki).unwrap();
+* let doc_str = write_document_to_string(&doc, MarkdownFlavor::XWiki.into()).unwrap();
+* println!("{}", doc_str);
+* ```
+*
+* ```rust
+* # use somedoc::model::Document;
+* use somedoc::write::{write_document_to_string, OutputFormat};
+*
+* # fn make_some_document() -> Document { Document::default() }
+* let doc = make_some_document();
+*
+* let doc_str = write_document_to_string(&doc, OutputFormat::Html).unwrap();
 * println!("{}", doc_str);
 * ```
 *
 * ## Features
 *
+* * Formats:
+*   * **fmt_html** - HTML writer.
+*   * **fmt_latex** - LaTeX (experimental) writer.
+*   * **fmt_markdown** - Markdown/wiki writer.
 * * **emoji_names**; adds a new module `emoji_names` to `model::inline` which only contains string
 *   constants for commonly supported emoji names. These can then be used to construct `Emoji` values
 *   for inline characters. This feature is not included by default.
+* * **math_builder**; - experimental support for building math expressions. This feature is not
+*   included by default.
 */
+
+// ------------------------------------------------------------------------------------------------
+// Preamble
+// ------------------------------------------------------------------------------------------------
+
+#![warn(
+    // ---------- Stylistic
+    future_incompatible,
+    nonstandard_style,
+    rust_2018_idioms,
+    trivial_casts,
+    trivial_numeric_casts,
+    // ---------- Public
+    missing_debug_implementations,
+    missing_docs,
+    unreachable_pub,
+    // ---------- Unsafe
+    unsafe_code,
+    // ---------- Unused
+    unused_extern_crates,
+    unused_import_braces,
+    unused_qualifications,
+    unused_results,
+)]
 
 #[macro_use]
 extern crate error_chain;
 
 #[macro_use]
 extern crate lazy_static;
-
-#[macro_use]
-extern crate log;
 
 // ------------------------------------------------------------------------------------------------
 // Modules
@@ -135,7 +174,5 @@ pub mod macros;
 pub mod error;
 
 pub mod model;
-
-//pub mod read;
 
 pub mod write;

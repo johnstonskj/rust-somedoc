@@ -1,5 +1,6 @@
 use proptest::prelude::*;
-use somedoc::model::inline::{Anchor, HyperLinkTarget};
+use somedoc::model::block::Label;
+use somedoc::model::inline::{HyperLink, HyperLinkTarget};
 use std::str::FromStr;
 
 // ------------------------------------------------------------------------------------------------
@@ -8,16 +9,13 @@ use std::str::FromStr;
 
 #[test]
 fn test_reject_empty() {
-    let result = Anchor::new("");
-    assert!(result.is_err());
-
-    let result = Anchor::from_str("");
+    let result = Label::from_str("");
     assert!(result.is_err());
 }
 
 #[test]
 fn test_new() {
-    let result = Anchor::new("test_new");
+    let result = Label::from_str("test_new");
     assert!(result.is_ok());
     println!("{:?}", result);
     assert_eq!(result.unwrap().inner(), &String::from("test_new"));
@@ -25,25 +23,25 @@ fn test_new() {
 
 #[test]
 fn test_into_inner() {
-    let result = Anchor::new("test_into_inner");
+    let result = Label::from_str("test-into-inner");
     assert!(result.is_ok());
     println!("{:?}", result);
     assert_eq!(
         result.unwrap().into_inner(),
-        String::from("test_into_inner")
+        String::from("test-into-inner")
     );
 }
 
 #[test]
 fn test_to_ref() {
-    let result = Anchor::new("test_to_ref");
+    let result = Label::from_str("test_to_ref");
     assert!(result.is_ok());
     println!("{:?}", result);
     let anchor = result.unwrap();
 
-    let link = anchor.to_ref();
+    let link: HyperLink = anchor.clone().into();
     assert!(link.is_internal());
-    assert!(!link.has_alt_text());
+    assert!(!link.has_caption());
     assert_eq!(link.target(), &HyperLinkTarget::Internal(anchor));
 }
 
@@ -54,12 +52,12 @@ fn test_to_ref() {
 proptest! {
     #[test]
     fn char_doesnt_crash(s in "\\PC") {
-        let _ = Anchor::from_str(&s);
+        let _ = Label::from_str(&s);
     }
 
     #[test]
-    fn valid_values(s in ".+") {
+    fn valid_values(s in r"\p{L}+[\p{L}\p{N}_\-\.]*") {
         println!("valid_values {:?}", s);
-        assert!(Anchor::from_str(&s).is_ok());
+        assert!(Label::from_str(&s).is_ok());
     }
 }

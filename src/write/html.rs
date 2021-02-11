@@ -1,23 +1,30 @@
 /*!
-One-line description.
-
-More detailed description, with
+Write a document as HTML. This includes a small number of additional CSS and JavaScript assets
+to support math formatting and code syntax highlighting.
 
 # Example
 
+```rust
+# use somedoc::model::Document;
+use somedoc::write::{OutputFormat, write_document_to_string};
+
+# fn make_some_document() -> Document { Document::default() }
+let doc = make_some_document();
+
+let doc_str = write_document_to_string(&doc, OutputFormat::Html).unwrap();
+println!("{}", doc_str);
+```
+
 */
 
-use crate::model::block::{
-    CodeBlock, Formatted, HeadingLevel, ListKind, MathBlock, ParagraphStyle,
-};
+use crate::model::block::{Caption, Column, HeadingLevel, Label, ListKind, ParagraphStyle};
 use crate::model::document::Metadata;
-use crate::model::inline::{
-    Anchor, Character, HyperLink, HyperLinkTarget, Image, Math, SpanStyle, Text,
-};
+use crate::model::inline::{Character, HyperLink, HyperLinkTarget, Image, Math, SpanStyle, Text};
 use crate::model::visitor::{
     walk_document, BlockVisitor, DocumentVisitor, InlineVisitor, TableVisitor,
 };
 use crate::model::Document;
+use crate::write::Writer;
 use regex::Regex;
 use std::cell::{RefCell, RefMut};
 use std::io::Write;
@@ -25,6 +32,33 @@ use std::io::Write;
 // ------------------------------------------------------------------------------------------------
 // Public Types
 // ------------------------------------------------------------------------------------------------
+
+///
+/// Implementation of the HTML writer structure, usually this is accessed via the `writer`
+/// function, but may be used directly.
+///
+/// # Example
+///
+/// ```rust
+/// # use somedoc::model::Document;
+/// use somedoc::write::html::HtmlWriter;
+/// use somedoc::write::{write_document_to_string, Writer};
+/// use somedoc::model::visitor::walk_document;
+///
+/// # fn make_some_document() -> Document { Document::default() }
+/// let doc = make_some_document();
+/// let mut out = std::io::stdout();
+/// let writer = HtmlWriter::new(&mut out);
+/// assert!(walk_document(&doc, &writer).is_ok());
+/// ```
+///
+#[derive(Debug)]
+pub struct HtmlWriter<'a, W: Write> {
+    state: RefCell<State>,
+    indent: RefCell<usize>,
+    list_level: RefCell<usize>,
+    w: RefCell<&'a mut W>,
+}
 
 // ------------------------------------------------------------------------------------------------
 // Private Types
@@ -35,13 +69,6 @@ enum State {
     Empty,
     Head,
     Body,
-}
-
-#[derive(Debug)]
-struct HtmlWriter<'a, W: Write> {
-    state: RefCell<State>,
-    indent: RefCell<usize>,
-    w: RefCell<&'a mut W>,
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -69,18 +96,21 @@ lazy_static! {
     static ref HEADER_ID_REGEX: Regex = Regex::new(r"[#&% \t\n]+").unwrap();
 }
 
-impl<'a, W: Write> HtmlWriter<'a, W> {
-    pub fn new(w: &'a mut W) -> Self {
+impl<'a, W: Write> Writer<'a, W> for HtmlWriter<'a, W> {
+    fn new(w: &'a mut W) -> Self {
         Self {
             state: RefCell::from(State::Empty),
             indent: RefCell::new(0),
+            list_level: RefCell::from(0),
             w: RefCell::from(w),
         }
     }
+}
 
+impl<'a, W: Write> HtmlWriter<'a, W> {
     fn meta_tag(
         &self,
-        w: &mut RefMut<&'a mut W>,
+        w: &mut RefMut<'_, &'a mut W>,
         name: &str,
         content: &str,
     ) -> crate::error::Result<()> {
@@ -90,7 +120,7 @@ impl<'a, W: Write> HtmlWriter<'a, W> {
 
     fn start_tag(
         &self,
-        w: &mut RefMut<&'a mut W>,
+        w: &mut RefMut<'_, &'a mut W>,
         tag: &str,
         start_line: bool,
     ) -> crate::error::Result<()> {
@@ -103,7 +133,7 @@ impl<'a, W: Write> HtmlWriter<'a, W> {
 
     fn start_tag_with(
         &self,
-        w: &mut RefMut<&'a mut W>,
+        w: &mut RefMut<'_, &'a mut W>,
         tag: &str,
         attributes: &[(&str, &str)],
         start_line: bool,
@@ -127,7 +157,7 @@ impl<'a, W: Write> HtmlWriter<'a, W> {
 
     fn end_tag(
         &self,
-        w: &mut RefMut<&'a mut W>,
+        w: &mut RefMut<'_, &'a mut W>,
         tag: &str,
         end_line: bool,
     ) -> crate::error::Result<()> {
@@ -140,7 +170,7 @@ impl<'a, W: Write> HtmlWriter<'a, W> {
 
     fn closed_tag(
         &self,
-        w: &mut RefMut<&'a mut W>,
+        w: &mut RefMut<'_, &'a mut W>,
         tag: &str,
         start_line: bool,
         end_line: bool,
@@ -157,7 +187,7 @@ impl<'a, W: Write> HtmlWriter<'a, W> {
 
     fn closed_tag_with(
         &self,
-        w: &mut RefMut<&'a mut W>,
+        w: &mut RefMut<'_, &'a mut W>,
         tag: &str,
         attributes: &[(&str, &str)],
         start_line: bool,
@@ -184,26 +214,31 @@ impl<'a, W: Write> HtmlWriter<'a, W> {
         Ok(())
     }
 
-    fn end_line(&self, w: &mut RefMut<&'a mut W>) -> crate::error::Result<()> {
+    fn end_line(&self, w: &mut RefMut<'_, &'a mut W>) -> crate::error::Result<()> {
         writeln!(w)?;
         Ok(())
     }
 
-    fn start_line(&self, w: &mut RefMut<&'a mut W>) -> crate::error::Result<()> {
+    fn start_line(&self, w: &mut RefMut<'_, &'a mut W>) -> crate::error::Result<()> {
         self.write(w, &format!("{: ^1$}", "", *self.indent.borrow() * 2))
     }
 
-    fn indent(&self, w: &mut RefMut<&'a mut W>) -> crate::error::Result<()> {
+    fn indent(&self, w: &mut RefMut<'_, &'a mut W>) -> crate::error::Result<()> {
         *self.indent.borrow_mut() += 1;
         self.end_line(w)
     }
 
-    fn outdent(&self, _: &mut RefMut<&'a mut W>) -> crate::error::Result<()> {
+    fn indent_no_newline(&self) -> crate::error::Result<()> {
+        *self.indent.borrow_mut() += 1;
+        Ok(())
+    }
+
+    fn outdent(&self, _: &mut RefMut<'_, &'a mut W>) -> crate::error::Result<()> {
         *self.indent.borrow_mut() -= 1;
         Ok(())
     }
 
-    fn write(&self, w: &mut RefMut<&'a mut W>, value: &str) -> crate::error::Result<()> {
+    fn write(&self, w: &mut RefMut<'_, &'a mut W>, value: &str) -> crate::error::Result<()> {
         write!(w, "{}", value)?;
         Ok(())
     }
@@ -277,15 +312,6 @@ impl<'a, W: Write> DocumentVisitor for HtmlWriter<'a, W> {
                     ),
                 )?;
             }
-            Metadata::Class(v) => {
-                self.start_tag_with(
-                    &mut w,
-                    "link",
-                    &[("rel", "stylesheet"), ("href", &v.name_or_path)],
-                    true,
-                )?;
-                self.end_tag(&mut w, "link", true)?;
-            }
             Metadata::Copyright(v) => {
                 self.meta_tag(
                     &mut w,
@@ -322,7 +348,7 @@ impl<'a, W: Write> DocumentVisitor for HtmlWriter<'a, W> {
                 self.end_tag(&mut w, "title", true)?;
             }
             Metadata::Other(v) => {
-                self.meta_tag(&mut w, &v.name, &v.value)?;
+                self.meta_tag(&mut w, &v.key, &v.value)?;
             }
         }
         Ok(())
@@ -378,7 +404,11 @@ impl<'a, W: Write> BlockVisitor for HtmlWriter<'a, W> {
         self.end_line(&mut w)
     }
 
-    fn start_heading(&self, level: &HeadingLevel) -> crate::error::Result<()> {
+    fn start_heading(
+        &self,
+        level: &HeadingLevel,
+        _label: &Option<Label>,
+    ) -> crate::error::Result<()> {
         self.start_tag(
             &mut self.w.borrow_mut(),
             &format!("h{}", level.clone() as u8),
@@ -387,7 +417,11 @@ impl<'a, W: Write> BlockVisitor for HtmlWriter<'a, W> {
         Ok(())
     }
 
-    fn end_heading(&self, level: &HeadingLevel) -> crate::error::Result<()> {
+    fn end_heading(
+        &self,
+        level: &HeadingLevel,
+        _label: &Option<Label>,
+    ) -> crate::error::Result<()> {
         self.end_tag(
             &mut self.w.borrow_mut(),
             &format!("h{}", level.clone() as u8),
@@ -395,7 +429,12 @@ impl<'a, W: Write> BlockVisitor for HtmlWriter<'a, W> {
         )
     }
 
-    fn image(&self, value: &Image) -> crate::error::Result<()> {
+    fn image(
+        &self,
+        value: &Image,
+        _caption: &Option<Caption>,
+        _label: &Option<Label>,
+    ) -> crate::error::Result<()> {
         let mut w = self.w.borrow_mut();
         self.start_tag(&mut w, "div", false)?;
         BlockVisitor::inline_visitor(self).unwrap().image(value)?;
@@ -403,15 +442,24 @@ impl<'a, W: Write> BlockVisitor for HtmlWriter<'a, W> {
         self.end_tag(&mut w, "div", true)
     }
 
-    fn math(&self, value: &MathBlock) -> crate::error::Result<()> {
+    fn math(
+        &self,
+        value: &Math,
+        _caption: &Option<Caption>,
+        _label: &Option<Label>,
+    ) -> crate::error::Result<()> {
         let mut w = self.w.borrow_mut();
         self.start_line(&mut w)?;
-        self.write(&mut w, &format!("\\[ {} \\]", value.inner().inner()))?;
+        self.write(&mut w, &format!("\\[ {} \\]", value.inner()))?;
         self.end_line(&mut w)
     }
 
-    fn start_list(&self, kind: &ListKind) -> crate::error::Result<()> {
+    fn start_list(&self, kind: &ListKind, _label: &Option<Label>) -> crate::error::Result<()> {
         let mut w = self.w.borrow_mut();
+        if *self.list_level.borrow() > 0 {
+            self.start_tag(&mut w, "li", true)?;
+            self.indent(&mut w)?;
+        }
         self.start_tag(
             &mut w,
             match kind {
@@ -420,10 +468,12 @@ impl<'a, W: Write> BlockVisitor for HtmlWriter<'a, W> {
             },
             true,
         )?;
-        self.indent(&mut w)
+        self.indent(&mut w)?;
+        *self.list_level.borrow_mut() += 1;
+        Ok(())
     }
 
-    fn end_list(&self, kind: &ListKind) -> crate::error::Result<()> {
+    fn end_list(&self, kind: &ListKind, _label: &Option<Label>) -> crate::error::Result<()> {
         let mut w = self.w.borrow_mut();
         self.outdent(&mut w)?;
         self.start_line(&mut w)?;
@@ -434,35 +484,42 @@ impl<'a, W: Write> BlockVisitor for HtmlWriter<'a, W> {
                 ListKind::Unordered => "ul",
             },
             true,
-        )
+        )?;
+        *self.list_level.borrow_mut() -= 1;
+        if *self.list_level.borrow() > 0 {
+            self.outdent(&mut w)?;
+            self.start_line(&mut w)?;
+            self.end_tag(&mut w, "li", true)?;
+        }
+        Ok(())
     }
 
-    fn start_list_item(&self) -> crate::error::Result<()> {
+    fn start_list_item(&self, _label: &Option<Label>) -> crate::error::Result<()> {
         self.start_tag(&mut self.w.borrow_mut(), "li", true)
     }
 
-    fn end_list_item(&self) -> crate::error::Result<()> {
+    fn end_list_item(&self, _label: &Option<Label>) -> crate::error::Result<()> {
         self.end_tag(&mut self.w.borrow_mut(), "li", true)
     }
 
-    fn start_definition_list(&self) -> crate::error::Result<()> {
+    fn start_definition_list(&self, _label: &Option<Label>) -> crate::error::Result<()> {
         let mut w = self.w.borrow_mut();
         self.start_tag(&mut w, "dl", true)?;
         self.indent(&mut w)
     }
 
-    fn end_definition_list(&self) -> crate::error::Result<()> {
+    fn end_definition_list(&self, _label: &Option<Label>) -> crate::error::Result<()> {
         let mut w = self.w.borrow_mut();
         self.outdent(&mut w)?;
         self.start_line(&mut w)?;
         self.end_tag(&mut w, "dl", true)
     }
 
-    fn start_definition_list_term(&self) -> crate::error::Result<()> {
+    fn start_definition_list_term(&self, _label: &Option<Label>) -> crate::error::Result<()> {
         self.start_tag(&mut self.w.borrow_mut(), "dt", true)
     }
 
-    fn end_definition_list_term(&self) -> crate::error::Result<()> {
+    fn end_definition_list_term(&self, _label: &Option<Label>) -> crate::error::Result<()> {
         self.end_tag(&mut self.w.borrow_mut(), "dt", true)
     }
 
@@ -474,26 +531,32 @@ impl<'a, W: Write> BlockVisitor for HtmlWriter<'a, W> {
         self.end_tag(&mut self.w.borrow_mut(), "dd", true)
     }
 
-    fn formatted(&self, value: &Formatted) -> crate::error::Result<()> {
+    fn formatted(&self, value: &String, _label: &Option<Label>) -> crate::error::Result<()> {
         let mut w = self.w.borrow_mut();
         self.start_tag(&mut w, "pre", true)?;
-        self.write(&mut w, &format!("{}\n", value.inner()))?;
+        self.write(&mut w, &format!("{}\n", value))?;
         self.start_line(&mut w)?;
         self.end_tag(&mut w, "pre", true)
     }
 
-    fn code_block(&self, value: &CodeBlock) -> crate::error::Result<()> {
+    fn code_block(
+        &self,
+        code: &String,
+        language: &Option<String>,
+        _caption: &Option<Caption>,
+        _label: &Option<Label>,
+    ) -> crate::error::Result<()> {
         let mut w = self.w.borrow_mut();
         self.start_tag(&mut w, "pre", true)?;
         self.indent(&mut w)?;
         self.start_line(&mut w)?;
-        if let Some(language) = value.language() {
+        if let Some(language) = language {
             self.start_tag_with(&mut w, "code", &vec![("class", language.as_str())], false)?;
         } else {
             self.start_tag(&mut w, "code", false)?;
         }
 
-        self.write(&mut w, &format!("{}\n", value.code()))?;
+        self.write(&mut w, &format!("{}\n", code))?;
 
         self.start_line(&mut w)?;
         self.end_tag(&mut w, "code", true)?;
@@ -502,24 +565,32 @@ impl<'a, W: Write> BlockVisitor for HtmlWriter<'a, W> {
         self.end_tag(&mut w, "pre", true)
     }
 
-    fn start_paragraph(&self, _styles: &Vec<ParagraphStyle>) -> crate::error::Result<()> {
+    fn start_paragraph(
+        &self,
+        _styles: &Vec<ParagraphStyle>,
+        _label: &Option<Label>,
+    ) -> crate::error::Result<()> {
         // TODO: complete the addition of styles.
         self.start_tag(&mut self.w.borrow_mut(), "p", true)?;
         Ok(())
     }
 
-    fn end_paragraph(&self, _styles: &Vec<ParagraphStyle>) -> crate::error::Result<()> {
+    fn end_paragraph(
+        &self,
+        _styles: &Vec<ParagraphStyle>,
+        _label: &Option<Label>,
+    ) -> crate::error::Result<()> {
         // TODO: complete the addition of styles.
         self.end_tag(&mut self.w.borrow_mut(), "p", true)
     }
 
-    fn start_quote(&self) -> crate::error::Result<()> {
+    fn start_quote(&self, _label: &Option<Label>) -> crate::error::Result<()> {
         let mut w = self.w.borrow_mut();
         self.start_tag(&mut w, "blockquote", true)?;
         self.indent(&mut w)
     }
 
-    fn end_quote(&self) -> crate::error::Result<()> {
+    fn end_quote(&self, _label: &Option<Label>) -> crate::error::Result<()> {
         let mut w = self.w.borrow_mut();
         self.outdent(&mut w)?;
         self.start_line(&mut w)?;
@@ -528,7 +599,6 @@ impl<'a, W: Write> BlockVisitor for HtmlWriter<'a, W> {
 
     fn thematic_break(&self) -> crate::error::Result<()> {
         let mut w = self.w.borrow_mut();
-        self.end_line(&mut w)?;
         self.closed_tag(&mut w, "hr", true, true)
     }
 
@@ -545,19 +615,84 @@ impl<'a, W: Write> BlockVisitor for HtmlWriter<'a, W> {
     }
 }
 
-impl<'a, W: Write> TableVisitor for HtmlWriter<'a, W> {}
+impl<'a, W: Write> TableVisitor for HtmlWriter<'a, W> {
+    fn start_table(
+        &self,
+        caption: &Option<Caption>,
+        _label: &Option<Label>,
+    ) -> crate::error::Result<()> {
+        let mut w = self.w.borrow_mut();
+        self.start_tag(&mut w, "table", true)?;
+        self.indent(&mut w)?;
+        if let Some(caption) = caption {
+            self.start_tag(&mut w, "caption", true)?;
+            self.write(&mut w, caption)?;
+            self.end_tag(&mut w, "caption", true)?;
+        }
+        Ok(())
+    }
 
-impl<'a, W: Write> InlineVisitor for HtmlWriter<'a, W> {
-    fn anchor(&self, value: &Anchor) -> crate::error::Result<()> {
-        self.closed_tag_with(
+    fn start_table_header_row(&self) -> crate::error::Result<()> {
+        let mut w = self.w.borrow_mut();
+        self.start_tag(&mut w, "thead", true)?;
+        self.indent(&mut w)?;
+        self.start_line(&mut w)?;
+        self.start_tag(&mut w, "tr", false)
+    }
+
+    fn table_header_cell(&self, column_cell: &Column, _: usize) -> crate::error::Result<()> {
+        self.write(
             &mut self.w.borrow_mut(),
-            "span",
-            &[("id", &self.anchor_id(value))],
-            false,
-            false,
+            &format!("<th>{}</th>", column_cell.label()),
         )
     }
 
+    fn end_table_header_row(&self) -> crate::error::Result<()> {
+        let mut w = self.w.borrow_mut();
+        self.end_tag(&mut w, "tr", true)?;
+        self.outdent(&mut w)?;
+        self.start_line(&mut w)?;
+        self.end_tag(&mut w, "thead", true)?;
+        self.start_line(&mut w)?;
+        self.end_tag(&mut w, "tbody", true)
+    }
+
+    fn start_table_row(&self, _: usize) -> crate::error::Result<()> {
+        let mut w = self.w.borrow_mut();
+        self.indent_no_newline()?;
+        self.start_line(&mut w)?;
+        self.start_tag(&mut w, "tr", false)
+    }
+
+    fn start_table_cell(&self, _: usize, _label: &Option<Label>) -> crate::error::Result<()> {
+        self.start_tag(&mut self.w.borrow_mut(), "td", false)
+    }
+
+    fn end_table_cell(&self, _: usize, _label: &Option<Label>) -> crate::error::Result<()> {
+        self.end_tag(&mut self.w.borrow_mut(), "td", false)
+    }
+
+    fn end_table_row(&self, _: usize) -> crate::error::Result<()> {
+        let mut w = self.w.borrow_mut();
+        self.end_tag(&mut w, "tr", true)?;
+        self.outdent(&mut w)
+    }
+
+    fn end_table(&self, _: &Option<Caption>, _label: &Option<Label>) -> crate::error::Result<()> {
+        let mut w = self.w.borrow_mut();
+        self.start_line(&mut w)?;
+        self.end_tag(&mut w, "tbody", true)?;
+        self.outdent(&mut w)?;
+        self.start_line(&mut w)?;
+        self.end_tag(&mut w, "table", true)
+    }
+
+    fn inline_visitor(&self) -> Option<&dyn InlineVisitor> {
+        Some(self)
+    }
+}
+
+impl<'a, W: Write> InlineVisitor for HtmlWriter<'a, W> {
     fn link(&self, value: &HyperLink) -> crate::error::Result<()> {
         self.closed_tag_with(
             &mut self.w.borrow_mut(),
@@ -566,7 +701,7 @@ impl<'a, W: Write> InlineVisitor for HtmlWriter<'a, W> {
                 "href",
                 &match value.target() {
                     HyperLinkTarget::External(v) => v.to_string(),
-                    HyperLinkTarget::Internal(v) => format!("#{}", self.anchor_id(v.inner())),
+                    HyperLinkTarget::Internal(v) => format!("#{}", self.anchor_id(v)),
                 },
             )],
             false,
@@ -577,9 +712,9 @@ impl<'a, W: Write> InlineVisitor for HtmlWriter<'a, W> {
     fn image(&self, value: &Image) -> crate::error::Result<()> {
         let src = match value.link().target() {
             HyperLinkTarget::External(v) => v.to_string(),
-            HyperLinkTarget::Internal(v) => format!("#{}", v.inner()),
+            HyperLinkTarget::Internal(v) => format!("#{}", v),
         };
-        let attributes: Vec<(&str, &str)> = if let Some(alt_text) = value.link().alt_text() {
+        let attributes: Vec<(&str, &str)> = if let Some(alt_text) = value.link().caption() {
             vec![("src", &src), ("alt", alt_text.inner())]
         } else {
             vec![("src", &src)]

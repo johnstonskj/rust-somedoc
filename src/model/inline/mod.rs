@@ -15,8 +15,6 @@ use crate::model::HasInnerContent;
 ///
 #[derive(Clone, Debug)]
 pub enum InlineContent {
-    /// Represents an internal document location that can be the target of a link.
-    Anchor(Anchor),
     /// A link which may be to an internal document location or an external document.
     HyperLink(HyperLink),
     /// An image, referenced via a `HyperLink`.
@@ -59,85 +57,72 @@ pub trait HasInlineContent: Default + HasInnerContent<InlineContent> {
         new_self
     }
 
-    /// Create a new inline content container from the provided `Anchor` content item.
-    fn anchor(inner: Anchor) -> Self {
-        let mut new_self = Self::default();
-        new_self.add_anchor(inner);
-        new_self
-    }
-
     /// Create a new inline content container from the provided `HyperLink` content item.
     fn link(inner: HyperLink) -> Self {
         let mut new_self = Self::default();
-        new_self.add_link(inner);
+        let _ = new_self.add_link(inner);
         new_self
     }
 
     /// Create a new inline content container from the provided `Image` content item.
     fn image(inner: Image) -> Self {
         let mut new_self = Self::default();
-        new_self.add_image(inner);
+        let _ = new_self.add_image(inner);
         new_self
     }
 
     /// Create a new inline content container from the provided `Text` content item.
     fn text(inner: Text) -> Self {
         let mut new_self = Self::default();
-        new_self.add_text(inner);
+        let _ = new_self.add_text(inner);
         new_self
     }
 
     /// Create a new inline content container from the provided string (into `Text`) content item.
     fn text_str(inner: &str) -> Self {
         let mut new_self = Self::default();
-        new_self.add_text(inner.into());
+        let _ = new_self.add_text(inner.into());
         new_self
     }
 
     /// Create a new inline content container from the provided `Character` content item.
     fn character(inner: Character) -> Self {
         let mut new_self = Self::default();
-        new_self.add_character(inner);
+        let _ = new_self.add_character(inner);
         new_self
     }
 
     /// Create a new inline content container with a line break.
     fn line_break() -> Self {
         let mut new_self = Self::default();
-        new_self.add_line_break();
+        let _ = new_self.add_line_break();
         new_self
     }
 
     /// Create a new inline content container from the provided `Span` content item.
     fn span(span: Span) -> Self {
         let mut new_self = Self::default();
-        new_self.add_span(span);
+        let _ = new_self.add_span(span);
         new_self
     }
 
     // --------------------------------------------------------------------------------------------
 
-    /// Add the provided `Anchor` to this container's inner content.
-    fn add_anchor(&mut self, inner: Anchor) -> &mut Self {
-        self.add_content(inner.into()).unwrap();
-        self
-    }
-
     /// Add the provided `HyperLink` to this container's inner content.
     fn add_link(&mut self, inner: HyperLink) -> &mut Self {
-        self.add_content(inner.into()).unwrap();
+        let _ = self.add_content(inner.into()).unwrap();
         self
     }
 
     /// Add the provided `Image` to this container's inner content.
     fn add_image(&mut self, inner: Image) -> &mut Self {
-        self.add_content(inner.into()).unwrap();
+        let _ = self.add_content(inner.into()).unwrap();
         self
     }
 
     /// Add the provided `Text` to this container's inner content.
     fn add_text(&mut self, inner: Text) -> &mut Self {
-        self.add_content(inner.into()).unwrap();
+        let _ = self.add_content(inner.into()).unwrap();
         self
     }
 
@@ -294,7 +279,7 @@ pub trait HasInlineContent: Default + HasInnerContent<InlineContent> {
     /// any style information and non-text instances such as images or links.
     fn unformatted_string(&self) -> String {
         let mut s = String::new();
-        unformat(&mut s, self.inner());
+        let _ = unformat(&mut s, self.inner());
         s
     }
 }
@@ -339,10 +324,6 @@ pub use character::{Character, Emoji};
 #[cfg(feature = "emoji_names")]
 #[allow(missing_docs)]
 pub mod emoji_names;
-
-#[doc(hidden)]
-pub mod anchor;
-pub use anchor::Anchor;
 
 #[doc(hidden)]
 pub mod image;

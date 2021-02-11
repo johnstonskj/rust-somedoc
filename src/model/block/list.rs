@@ -1,7 +1,7 @@
 use crate::error;
-use crate::model::block::BlockContent;
+use crate::model::block::{BlockContent, Label};
 use crate::model::inline::{HasInlineContent, InlineContent};
-use crate::model::HasInnerContent;
+use crate::model::{block::HasLabel, HasInnerContent};
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
@@ -24,6 +24,7 @@ pub enum ListKind {
 ///
 #[derive(Clone, Debug)]
 pub struct List {
+    label: Option<Label>,
     kind: ListKind,
     inner: Vec<ListItem>,
 }
@@ -42,6 +43,7 @@ pub enum ListItem {
 ///
 #[derive(Clone, Debug)]
 pub struct Item {
+    label: Option<Label>,
     inner: Vec<InlineContent>,
 }
 
@@ -63,11 +65,14 @@ impl Default for List {
     }
 }
 
+label_impl!(List);
+
 block_impls!(List);
 
 impl List {
     pub fn new(kind: ListKind) -> Self {
         Self {
+            label: None,
             kind,
             inner: Default::default(),
         }
@@ -99,18 +104,15 @@ impl List {
     }
 
     pub fn add_item(&mut self, item: Item) -> &mut Self {
-        self.add_inner(ListItem::Item(item));
-        self
+        self.add_inner(ListItem::Item(item))
     }
 
     pub fn add_item_from(&mut self, item: InlineContent) -> &mut Self {
-        self.add_inner(ListItem::Item(item.into()));
-        self
+        self.add_inner(ListItem::Item(item.into()))
     }
 
     pub fn add_sub_list(&mut self, item: List) -> &mut Self {
-        self.add_inner(ListItem::List(item));
-        self
+        self.add_inner(ListItem::List(item))
     }
 
     // --------------------------------------------------------------------------------------------
@@ -139,10 +141,13 @@ impl List {
 impl Default for Item {
     fn default() -> Self {
         Self {
+            label: None,
             inner: Default::default(),
         }
     }
 }
+
+label_impl!(Item);
 
 has_inline_impls!(Item);
 

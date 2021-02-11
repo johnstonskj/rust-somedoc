@@ -5,11 +5,9 @@ use somedoc::model::block::{
 };
 use somedoc::model::document::Document;
 use somedoc::model::inline::{HasInlineContent, HyperLink, Span, Text};
-use somedoc::write::markdown::MarkdownFlavor;
-use somedoc::write::{write_document_to_string, OutputFormat};
 use std::str::FromStr;
 
-fn main() {
+pub fn document() -> Document {
     let mut doc = Document::default();
 
     let _ = doc.set_title("Scheme: Clothing shapes, patterns, and details");
@@ -88,14 +86,5 @@ fn main() {
 
     doc.add_formatted(Formatted::new("@prefix foo: <...>\nfoo:bar foo:baz 12."));
 
-    let md = write_document_to_string(&doc, MarkdownFlavor::GitHub.into()).unwrap();
-    println!("{}", md);
-    println!("------------------------------------------------------------------------------------------------");
-
-    let xw = write_document_to_string(&doc, MarkdownFlavor::XWiki.into()).unwrap();
-    println!("{}", xw);
-    println!("------------------------------------------------------------------------------------------------");
-
-    let xw = write_document_to_string(&doc, OutputFormat::Html).unwrap();
-    println!("{}", xw);
+    doc
 }

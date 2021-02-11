@@ -1,6 +1,6 @@
 use crate::error;
-use crate::model::block::{BlockContent, HasBlockContent};
-use crate::model::HasInnerContent;
+use crate::model::block::{BlockContent, HasBlockContent, Label};
+use crate::model::{block::HasLabel, HasInnerContent};
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
@@ -11,6 +11,7 @@ use crate::model::HasInnerContent;
 ///
 #[derive(Clone, Debug)]
 pub struct Quote {
+    label: Option<Label>,
     content: Vec<BlockContent>,
 }
 
@@ -21,6 +22,7 @@ pub struct Quote {
 impl Default for Quote {
     fn default() -> Self {
         Self {
+            label: None,
             content: Default::default(),
         }
     }
@@ -28,9 +30,14 @@ impl Default for Quote {
 
 impl From<BlockContent> for Quote {
     fn from(v: BlockContent) -> Self {
-        Self { content: vec![v] }
+        Self {
+            label: None,
+            content: vec![v],
+        }
     }
 }
+
+label_impl!(Quote);
 
 block_impls!(Quote);
 

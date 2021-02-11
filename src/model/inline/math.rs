@@ -64,7 +64,7 @@ mod builder {
     use std::fmt::{Display, Formatter};
 
     #[derive(Clone, Debug)]
-    pub struct MathBuilder(Vec<String>);
+    pub(crate) struct MathBuilder(Vec<String>);
 
     impl Default for MathBuilder {
         fn default() -> Self {

@@ -1,7 +1,7 @@
 use crate::error;
-use crate::model::block::BlockContent;
+use crate::model::block::{BlockContent, Label};
 use crate::model::inline::{HasInlineContent, InlineContent, Text};
-use crate::model::HasInnerContent;
+use crate::model::{block::HasLabel, HasInnerContent};
 use std::convert::TryFrom;
 
 // ------------------------------------------------------------------------------------------------
@@ -29,6 +29,7 @@ pub enum HeadingLevel {
 ///
 #[derive(Clone, Debug)]
 pub struct Heading {
+    label: Option<Label>,
     level: HeadingLevel,
     inner: Vec<InlineContent>,
 }
@@ -48,6 +49,7 @@ impl Default for HeadingLevel {
 impl Default for Heading {
     fn default() -> Self {
         Self {
+            label: None,
             level: Default::default(),
             inner: Default::default(),
         }
@@ -71,6 +73,8 @@ impl TryFrom<u8> for HeadingLevel {
     }
 }
 
+label_impl!(Heading);
+
 block_impls!(Heading);
 
 has_inline_impls!(Heading);
@@ -78,6 +82,7 @@ has_inline_impls!(Heading);
 impl Heading {
     pub fn new(inner: &str, kind: HeadingLevel) -> Self {
         Self {
+            label: None,
             level: kind,
             inner: vec![Text::from(inner).into()],
         }
@@ -97,6 +102,10 @@ impl Heading {
 
     pub fn sub_sub_sub_section(inner: &str) -> Self {
         Self::new(inner, HeadingLevel::SubSubSubSection)
+    }
+
+    pub fn sub_sub_sub_sub_section(inner: &str) -> Self {
+        Self::new(inner, HeadingLevel::SubSubSubSubSection)
     }
 
     pub fn sub_sub_sub_sub_sub_section(inner: &str) -> Self {

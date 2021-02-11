@@ -19,14 +19,12 @@ pub fn writer<W: Write>(doc: &Document, w: &mut W) -> crate::error::Result<()> {
 */
 
 use crate::model::block::{
-    BlockContent, Caption, Captioned, CodeBlock, Column, DefinitionList, DefinitionListItem,
-    Formatted, HeadingLevel, List, ListItem, ListKind, MathBlock, ParagraphStyle, Table,
+    BlockContent, Caption, Captioned, Column, DefinitionList, DefinitionListItem, HeadingLevel,
+    Label, List, ListItem, ListKind, ParagraphStyle, Table,
 };
 use crate::model::document::Metadata;
-use crate::model::inline::{
-    Anchor, Character, HyperLink, Image, InlineContent, Math, SpanStyle, Text,
-};
-use crate::model::HasInnerContent;
+use crate::model::inline::{Character, HyperLink, Image, InlineContent, Math, SpanStyle, Text};
+use crate::model::{block::HasLabel, HasInnerContent};
 use crate::model::{Document, HasStyles};
 
 // ------------------------------------------------------------------------------------------------
@@ -43,8 +41,18 @@ pub trait DocumentVisitor {
         Ok(())
     }
 
+    /// Called before any metadata items, and **only if** there are metadata items.
+    fn start_metadata(&self) -> crate::error::Result<()> {
+        Ok(())
+    }
+
     /// Visit each `Metadata` instance.
     fn metadata(&self, metadatum: &Metadata) -> crate::error::Result<()> {
+        Ok(())
+    }
+
+    /// Called after any metadata items, and **only if** there are metadata items.
+    fn end_metadata(&self) -> crate::error::Result<()> {
         Ok(())
     }
 
@@ -71,68 +79,92 @@ pub trait BlockVisitor {
         Ok(())
     }
 
+    /// Called at the start of the document's abstract.
+    fn start_abstract(&self) -> crate::error::Result<()> {
+        Ok(())
+    }
+
+    /// Called at the end of the document's abstract.
+    fn end_abstract(&self) -> crate::error::Result<()> {
+        Ok(())
+    }
+
     /// Visit each `BlockContent::Comment` instance.
     fn comment(&self, value: &str) -> crate::error::Result<()> {
         Ok(())
     }
 
     /// Called at the start of each `BlockContent::Heading` instance, before any inner content.
-    fn start_heading(&self, level: &HeadingLevel) -> crate::error::Result<()> {
+    fn start_heading(
+        &self,
+        level: &HeadingLevel,
+        label: &Option<Label>,
+    ) -> crate::error::Result<()> {
         Ok(())
     }
 
     /// Called at the end of each `BlockContent::Heading` instance, after any inner content.
-    fn end_heading(&self, level: &HeadingLevel) -> crate::error::Result<()> {
+    fn end_heading(&self, level: &HeadingLevel, label: &Option<Label>) -> crate::error::Result<()> {
         Ok(())
     }
 
     /// Visit each `BlockContent::Image` instance.
-    fn image(&self, value: &Image) -> crate::error::Result<()> {
+    fn image(
+        &self,
+        value: &Image,
+        caption: &Option<Caption>,
+        label: &Option<Label>,
+    ) -> crate::error::Result<()> {
         Ok(())
     }
 
     /// Visit each `BlockContent::MathBlock` instance.
-    fn math(&self, value: &MathBlock) -> crate::error::Result<()> {
+    fn math(
+        &self,
+        value: &Math,
+        caption: &Option<Caption>,
+        label: &Option<Label>,
+    ) -> crate::error::Result<()> {
         Ok(())
     }
 
     /// Called at the start of each `BlockContent::List` instance, before any inner content.
-    fn start_list(&self, kind: &ListKind) -> crate::error::Result<()> {
+    fn start_list(&self, kind: &ListKind, label: &Option<Label>) -> crate::error::Result<()> {
         Ok(())
     }
 
     /// Called at the start of each `BlockContent::List` instance, before any inner content.
-    fn end_list(&self, kind: &ListKind) -> crate::error::Result<()> {
+    fn end_list(&self, kind: &ListKind, label: &Option<Label>) -> crate::error::Result<()> {
         Ok(())
     }
 
     /// Called at the start of each `Item` instance, before any inner content.
-    fn start_list_item(&self) -> crate::error::Result<()> {
+    fn start_list_item(&self, label: &Option<Label>) -> crate::error::Result<()> {
         Ok(())
     }
 
     /// Called at the end of each `Item` instance, after any inner content.
-    fn end_list_item(&self) -> crate::error::Result<()> {
+    fn end_list_item(&self, label: &Option<Label>) -> crate::error::Result<()> {
         Ok(())
     }
 
     /// Called at the start of each `BlockContent::DefinitionList` instance, before any inner content.
-    fn start_definition_list(&self) -> crate::error::Result<()> {
+    fn start_definition_list(&self, label: &Option<Label>) -> crate::error::Result<()> {
         Ok(())
     }
 
     /// Called at the end of each `BlockContent::DefinitionList` instance, after any inner content.
-    fn end_definition_list(&self) -> crate::error::Result<()> {
+    fn end_definition_list(&self, label: &Option<Label>) -> crate::error::Result<()> {
         Ok(())
     }
 
     /// Called at the start of each `Definition` instance `term`, before any inner content.
-    fn start_definition_list_term(&self) -> crate::error::Result<()> {
+    fn start_definition_list_term(&self, label: &Option<Label>) -> crate::error::Result<()> {
         Ok(())
     }
 
     /// Called at the end of each `Definition` instance `term`, after any inner content.
-    fn end_definition_list_term(&self) -> crate::error::Result<()> {
+    fn end_definition_list_term(&self, label: &Option<Label>) -> crate::error::Result<()> {
         Ok(())
     }
 
@@ -147,32 +179,46 @@ pub trait BlockVisitor {
     }
 
     /// Visit each `BlockContent::Formatted` instance.
-    fn formatted(&self, value: &Formatted) -> crate::error::Result<()> {
+    fn formatted(&self, value: &String, label: &Option<Label>) -> crate::error::Result<()> {
         Ok(())
     }
 
     /// Visit each `BlockContent::CodeBlock` instance.
-    fn code_block(&self, value: &CodeBlock) -> crate::error::Result<()> {
+    fn code_block(
+        &self,
+        code: &String,
+        language: &Option<String>,
+        caption: &Option<Caption>,
+        label: &Option<Label>,
+    ) -> crate::error::Result<()> {
         Ok(())
     }
 
     /// Called at the start of each `BlockContent::Paragraph` instance, before any inner content.
-    fn start_paragraph(&self, styles: &Vec<ParagraphStyle>) -> crate::error::Result<()> {
+    fn start_paragraph(
+        &self,
+        styles: &Vec<ParagraphStyle>,
+        label: &Option<Label>,
+    ) -> crate::error::Result<()> {
         Ok(())
     }
 
     /// Called at the end of each `BlockContent::Paragraph` instance, after any inner content.
-    fn end_paragraph(&self, styles: &Vec<ParagraphStyle>) -> crate::error::Result<()> {
+    fn end_paragraph(
+        &self,
+        styles: &Vec<ParagraphStyle>,
+        label: &Option<Label>,
+    ) -> crate::error::Result<()> {
         Ok(())
     }
 
     /// Called at the start of each `BlockContent::Quote` instance, before any inner content.
-    fn start_quote(&self) -> crate::error::Result<()> {
+    fn start_quote(&self, label: &Option<Label>) -> crate::error::Result<()> {
         Ok(())
     }
 
     /// Called at the end of each `BlockContent::Quote` instance, after any inner content.
-    fn end_quote(&self) -> crate::error::Result<()> {
+    fn end_quote(&self, label: &Option<Label>) -> crate::error::Result<()> {
         Ok(())
     }
 
@@ -205,7 +251,11 @@ pub trait BlockVisitor {
 #[allow(unused_variables)]
 pub trait TableVisitor {
     /// Called at the start of each `Table` instance, before any values.
-    fn start_table(&self, caption: &Option<Caption>) -> crate::error::Result<()> {
+    fn start_table(
+        &self,
+        caption: &Option<Caption>,
+        label: &Option<Label>,
+    ) -> crate::error::Result<()> {
         Ok(())
     }
 
@@ -234,12 +284,16 @@ pub trait TableVisitor {
     }
 
     /// Called at the start of each `Cell` instance, before any inner content.
-    fn start_table_cell(&self, column_idx: usize) -> crate::error::Result<()> {
+    fn start_table_cell(
+        &self,
+        column_idx: usize,
+        label: &Option<Label>,
+    ) -> crate::error::Result<()> {
         Ok(())
     }
 
     /// Called at the end of each `Cell` instance, after any inner content.
-    fn end_table_cell(&self, column_idx: usize) -> crate::error::Result<()> {
+    fn end_table_cell(&self, column_idx: usize, label: &Option<Label>) -> crate::error::Result<()> {
         Ok(())
     }
 
@@ -249,7 +303,11 @@ pub trait TableVisitor {
     }
 
     /// Called at the end of each `Table` instance, after any values.
-    fn end_table(&self, caption: &Option<Caption>) -> crate::error::Result<()> {
+    fn end_table(
+        &self,
+        caption: &Option<Caption>,
+        label: &Option<Label>,
+    ) -> crate::error::Result<()> {
         Ok(())
     }
 
@@ -266,11 +324,6 @@ pub trait TableVisitor {
 ///
 #[allow(unused_variables)]
 pub trait InlineVisitor {
-    /// Visit each `InlineContent::Anchor` instance.
-    fn anchor(&self, value: &Anchor) -> crate::error::Result<()> {
-        Ok(())
-    }
-
     /// Visit each `InlineContent::HyperLink` instance.
     fn link(&self, value: &HyperLink) -> crate::error::Result<()> {
         Ok(())
@@ -322,11 +375,24 @@ pub trait InlineVisitor {
 pub fn walk_document(doc: &Document, visitor: &impl DocumentVisitor) -> crate::error::Result<()> {
     visitor.start_document()?;
 
-    for datum in doc.metadata() {
-        visitor.metadata(datum)?;
+    if doc.has_metadata() {
+        visitor.start_metadata()?;
+        for datum in doc.metadata() {
+            visitor.metadata(datum)?;
+        }
+        visitor.end_metadata()?;
     }
 
     if let Some(block_visitor) = visitor.block_visitor() {
+        if let Some(abstract_block) = doc.abstract_block() {
+            block_visitor.start_block()?;
+            block_visitor.start_abstract()?;
+            if let Some(inline_visitor) = block_visitor.inline_visitor() {
+                walk_inline(abstract_block.inner(), inline_visitor)?;
+            }
+            block_visitor.end_abstract()?;
+            block_visitor.end_block()?;
+        }
         walk_all_blocks(doc.inner(), block_visitor)?;
     }
 
@@ -352,29 +418,31 @@ fn walk_block(block: &BlockContent, visitor: &dyn BlockVisitor) -> crate::error:
     match block {
         BlockContent::Comment(v) => visitor.comment(v)?,
         BlockContent::Heading(v) => {
-            visitor.start_heading(v.level())?;
+            visitor.start_heading(v.level(), v.label())?;
             if let Some(inline_visitor) = visitor.inline_visitor() {
                 walk_inline(v.inner(), inline_visitor)?;
             }
-            visitor.end_heading(v.level())?;
+            visitor.end_heading(v.level(), v.label())?;
         }
-        BlockContent::Image(v) => visitor.image(v)?,
-        BlockContent::MathBlock(v) => visitor.math(v)?,
+        BlockContent::ImageBlock(v) => visitor.image(v.inner(), v.caption(), v.label())?,
+        BlockContent::MathBlock(v) => visitor.math(v.inner(), v.caption(), v.label())?,
         BlockContent::List(v) => walk_list(v, visitor)?,
         BlockContent::DefinitionList(v) => walk_definition_list(v, visitor)?,
-        BlockContent::Formatted(v) => visitor.formatted(v)?,
-        BlockContent::CodeBlock(v) => visitor.code_block(v)?,
+        BlockContent::Formatted(v) => visitor.formatted(v.inner(), v.label())?,
+        BlockContent::CodeBlock(v) => {
+            visitor.code_block(v.code(), v.language(), v.caption(), v.label())?
+        }
         BlockContent::Paragraph(v) => {
-            visitor.start_paragraph(v.styles())?;
+            visitor.start_paragraph(v.styles(), v.label())?;
             if let Some(inline_visitor) = visitor.inline_visitor() {
                 walk_inline(v.inner(), inline_visitor)?;
             }
-            visitor.end_paragraph(v.styles())?;
+            visitor.end_paragraph(v.styles(), v.label())?;
         }
         BlockContent::Quote(v) => {
-            visitor.start_quote()?;
+            visitor.start_quote(v.label())?;
             walk_all_blocks(v.inner(), visitor)?;
-            visitor.end_quote()?;
+            visitor.end_quote(v.label())?;
         }
         BlockContent::Table(v) => {
             if let Some(table_visitor) = visitor.table_visitor() {
@@ -388,29 +456,29 @@ fn walk_block(block: &BlockContent, visitor: &dyn BlockVisitor) -> crate::error:
 }
 
 fn walk_list(list: &List, visitor: &dyn BlockVisitor) -> crate::error::Result<()> {
-    visitor.start_list(list.kind())?;
+    visitor.start_list(list.kind(), list.label())?;
     for inner in list.inner() {
         match inner {
             ListItem::List(v) => {
                 walk_list(&v, visitor)?;
             }
             ListItem::Item(v) => {
-                visitor.start_list_item()?;
+                visitor.start_list_item(v.label())?;
                 if let Some(inline_visitor) = visitor.inline_visitor() {
                     walk_inline(v.inner(), inline_visitor)?;
                 }
-                visitor.end_list_item()?;
+                visitor.end_list_item(v.label())?;
             }
         }
     }
-    visitor.end_list(list.kind())
+    visitor.end_list(list.kind(), list.label())
 }
 
 fn walk_definition_list(
     list: &DefinitionList,
     visitor: &dyn BlockVisitor,
 ) -> crate::error::Result<()> {
-    visitor.start_definition_list()?;
+    visitor.start_definition_list(list.label())?;
     for inner in list.inner() {
         match inner {
             DefinitionListItem::List(v) => {
@@ -418,9 +486,9 @@ fn walk_definition_list(
             }
             DefinitionListItem::Item(v) => {
                 if let Some(inline_visitor) = visitor.inline_visitor() {
-                    visitor.start_definition_list_term()?;
+                    visitor.start_definition_list_term(v.label())?;
                     walk_inline(v.term().inner(), inline_visitor)?;
-                    visitor.end_definition_list_term()?;
+                    visitor.end_definition_list_term(v.label())?;
 
                     visitor.start_definition_list_text()?;
                     walk_inline(v.text().inner(), inline_visitor)?;
@@ -429,11 +497,11 @@ fn walk_definition_list(
             }
         }
     }
-    visitor.end_definition_list()
+    visitor.end_definition_list(list.label())
 }
 
 fn walk_table(table: &Table, visitor: &dyn TableVisitor) -> crate::error::Result<()> {
-    visitor.start_table(table.caption())?;
+    visitor.start_table(table.caption(), table.label())?;
 
     if table.has_columns() {
         visitor.start_table_header_row()?;
@@ -446,16 +514,16 @@ fn walk_table(table: &Table, visitor: &dyn TableVisitor) -> crate::error::Result
     for (i, row) in table.rows().iter().enumerate() {
         visitor.start_table_row(i)?;
         for (j, cell) in row.cells().iter().enumerate() {
-            visitor.start_table_cell(j)?;
+            visitor.start_table_cell(j, cell.label())?;
             if let Some(inline_visitor) = visitor.inline_visitor() {
                 walk_inline(cell.inner(), inline_visitor)?;
             }
-            visitor.end_table_cell(j)?;
+            visitor.end_table_cell(j, cell.label())?;
         }
         visitor.end_table_row(i)?;
     }
 
-    visitor.end_table(table.caption())
+    visitor.end_table(table.caption(), table.label())
 }
 
 fn walk_inline(
@@ -464,7 +532,6 @@ fn walk_inline(
 ) -> crate::error::Result<()> {
     for inline in inline {
         match inline {
-            InlineContent::Anchor(v) => visitor.anchor(v)?,
             InlineContent::HyperLink(v) => visitor.link(v)?,
             InlineContent::Image(v) => visitor.image(v)?,
             InlineContent::Text(v) => visitor.text(v)?,

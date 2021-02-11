@@ -1,5 +1,13 @@
-use crate::error;
-use crate::model::inline::{HyperLink, InlineContent};
+/*!
+One-line description.
+
+More detailed description, with
+
+# Example
+
+*/
+
+use regex::Regex;
 use std::fmt::{Display, Formatter};
 use std::ops::Deref;
 use std::str::FromStr;
@@ -8,11 +16,35 @@ use std::str::FromStr;
 // Public Types
 // ------------------------------------------------------------------------------------------------
 
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct Label(String);
+
 ///
-/// An `Anchor` represents a referencable location within a document.
+/// This trait is used to attach a *label* to any element in the model. In HTML terms these are
+/// anchors, in markdown these may or may not be supported, in LaTeX they are represented using
+/// `\label{}`.
 ///
-#[derive(Clone, Debug, PartialEq)]
-pub struct Anchor(String);
+pub trait HasLabel {
+    ///
+    /// Returns `true` if this element has a label, else `false`.
+    ///
+    fn has_label(&self) -> bool;
+
+    ///
+    /// Return the element's label, if present.
+    ///
+    fn label(&self) -> &Option<Label>;
+
+    ///
+    /// Set the current element's label value.
+    ///
+    fn set_label(&mut self, label: Label);
+
+    ///
+    /// Set the current element's label to `None`.
+    ///
+    fn unset_label(&mut self);
+}
 
 // ------------------------------------------------------------------------------------------------
 // Private Types
@@ -26,21 +58,29 @@ pub struct Anchor(String);
 // Implementations
 // ------------------------------------------------------------------------------------------------
 
-impl Display for Anchor {
+lazy_static! {
+    static ref RE_LABEL: Regex = Regex::new(r"\p{L}+[\p{L}\p{N}_\-\.]*").unwrap();
+}
+
+impl Display for Label {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
     }
 }
 
-impl FromStr for Anchor {
-    type Err = error::Error;
+impl FromStr for Label {
+    type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::new(s)
+        if RE_LABEL.is_match(s) {
+            Ok(Self(s.to_string()))
+        } else {
+            Err(())
+        }
     }
 }
 
-impl Deref for Anchor {
+impl Deref for Label {
     type Target = str;
 
     fn deref(&self) -> &Self::Target {
@@ -48,29 +88,11 @@ impl Deref for Anchor {
     }
 }
 
-inline_impls!(Anchor);
-
-impl Anchor {
-    /// Construct a new Anchor from the provided string value. This value **must** not be empty.
-    pub fn new(value: &str) -> error::Result<Self> {
-        if value.is_empty() {
-            Err(error::ErrorKind::MustNotBeEmpty.into())
-        } else {
-            Ok(Self(value.to_string()))
-        }
-    }
-
-    /// Create a new `HyperLink` value that refers to this `Anchor`.
-    pub fn to_ref(&self) -> HyperLink {
-        HyperLink::internal(self.clone())
-    }
-
-    /// Return a reference to the inner string.
+impl Label {
     pub fn inner(&self) -> &String {
         &self.0
     }
 
-    /// Return the inner string.
     pub fn into_inner(self) -> String {
         self.0
     }

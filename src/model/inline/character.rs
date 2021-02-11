@@ -1,6 +1,7 @@
 use crate::error;
 use crate::model::inline::InlineContent;
 use regex::Regex;
+use std::fmt::{Display, Formatter};
 use std::ops::Deref;
 use std::str::FromStr;
 
@@ -34,6 +35,12 @@ pub enum Character {
 
 lazy_static! {
     static ref EMOJI_RE: Regex = Regex::new(r"(^:[a-zA-Z0-9_\-]+:$)|(^[a-zA-Z0-9_\-]+$)").unwrap();
+}
+
+impl Display for Emoji {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
 }
 
 impl FromStr for Emoji {

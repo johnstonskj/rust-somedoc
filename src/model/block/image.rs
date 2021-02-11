@@ -1,19 +1,19 @@
 use crate::model::block::caption::Captioned;
 use crate::model::block::{BlockContent, Caption};
 use crate::model::block::{HasLabel, Label};
-use crate::model::inline::Math;
+use crate::model::inline::Image;
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
 // ------------------------------------------------------------------------------------------------
 
 ///
-/// .
+///
 ///
 #[derive(Clone, Debug)]
-pub struct MathBlock {
+pub struct ImageBlock {
     label: Option<Label>,
-    math: Math,
+    image: Image,
     caption: Option<Caption>,
 }
 
@@ -21,34 +21,34 @@ pub struct MathBlock {
 // Implementations
 // ------------------------------------------------------------------------------------------------
 
-label_impl!(MathBlock);
+label_impl!(ImageBlock);
 
-block_impls!(MathBlock);
+block_impls!(ImageBlock);
 
-has_captioned_impls!(MathBlock);
+has_captioned_impls!(ImageBlock);
 
-impl MathBlock {
-    pub fn new(math: Math) -> Self {
+impl ImageBlock {
+    pub fn new(image: Image) -> Self {
         Self {
             label: None,
-            math,
+            image,
             caption: None,
         }
     }
 
-    pub fn new_with_caption(math: Math, caption: Caption) -> Self {
+    pub fn new_with_caption(image: Image, caption: Caption) -> Self {
         Self {
             label: None,
-            math,
+            image,
             caption: Some(caption),
         }
     }
 
-    pub fn new_with_caption_str(math: Math, caption: &str) -> Self {
-        Self::new_with_caption(math, caption.into())
+    pub fn new_with_caption_str(image: Image, caption: &str) -> Self {
+        Self::new_with_caption(image, caption.into())
     }
 
-    pub fn inner(&self) -> &Math {
-        &self.math
+    pub fn inner(&self) -> &Image {
+        &self.image
     }
 }

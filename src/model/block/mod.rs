@@ -20,7 +20,7 @@ pub enum BlockContent {
     /// A section heading.
     Heading(Heading),
     /// A block containing an image only.
-    Image(Image),
+    ImageBlock(ImageBlock),
     /// Block formatted math formula.
     MathBlock(MathBlock),
     /// An ordered, or unordered, and possibly nested list.
@@ -41,6 +41,8 @@ pub enum BlockContent {
     ThematicBreak,
 }
 
+// TODO: potentially add TOC, glossary, ettc.
+
 ///
 /// This trait is implemented by any type that contains, as content, a list of block content instances.
 /// Implementers of this trait may be themselves either block content objects.
@@ -58,77 +60,77 @@ pub trait HasBlockContent: Default + HasInnerContent<BlockContent> {
     /// Create a new block content container from the provided `String` content item.
     fn comment(inner: String) -> Self {
         let mut new_self = Self::default();
-        new_self.add_comment_str(&inner);
+        let _ = new_self.add_comment_str(&inner);
         new_self
     }
 
     /// Create a new block content container from the provided `Heading` content item.
     fn heading(inner: Heading) -> Self {
         let mut new_self = Self::default();
-        new_self.add_heading(inner);
+        let _ = new_self.add_heading(inner);
         new_self
     }
 
     /// Create a new block content container from the provided `Image` content item.
     fn image(inner: Image) -> Self {
         let mut new_self = Self::default();
-        new_self.add_image(inner);
+        let _ = new_self.add_image(inner);
         new_self
     }
 
     /// Create a new block content container from the provided `List` content item.
     fn list(inner: List) -> Self {
         let mut new_self = Self::default();
-        new_self.add_list(inner);
+        let _ = new_self.add_list(inner);
         new_self
     }
 
     /// Create a new block content container from the provided `DefinitionList` content item.
     fn definition_list(inner: DefinitionList) -> Self {
         let mut new_self = Self::default();
-        new_self.add_definition_list(inner);
+        let _ = new_self.add_definition_list(inner);
         new_self
     }
 
     /// Create a new block content container from the provided `Formatted` content item.
     fn formatted(inner: Formatted) -> Self {
         let mut new_self = Self::default();
-        new_self.add_formatted(inner);
+        let _ = new_self.add_formatted(inner);
         new_self
     }
 
     /// Create a new block content container from the provided `CodeBlock` content item.
     fn code_block(inner: CodeBlock) -> Self {
         let mut new_self = Self::default();
-        new_self.add_code_block(inner);
+        let _ = new_self.add_code_block(inner);
         new_self
     }
 
     /// Create a new block content container from the provided `Paragraph` content item.
     fn paragraph(inner: Paragraph) -> Self {
         let mut new_self = Self::default();
-        new_self.add_paragraph(inner);
+        let _ = new_self.add_paragraph(inner);
         new_self
     }
 
     /// Create a new block content container from the provided `Quote` content item.
     fn block_quote(inner: Quote) -> Self {
         let mut new_self = Self::default();
-        new_self.add_block_quote(inner);
+        let _ = new_self.add_block_quote(inner);
         new_self
     }
 
     /// Create a new block content container from the provided `Table` content item.
     fn table(inner: Table) -> Self {
         let mut new_self = Self::default();
-        new_self.add_table(inner);
+        let _ = new_self.add_table(inner);
         new_self
     }
 
     /// Create a new block content container with a thematic break.
     fn thematic_break() -> Self {
         let mut new_self = Self::default();
-        new_self.add_thematic_break();
+        let _ = new_self.add_thematic_break();
         new_self
     }
 
@@ -219,12 +221,20 @@ pub mod heading;
 pub use heading::{Heading, HeadingLevel};
 
 #[doc(hidden)]
+pub mod label;
+pub use label::{HasLabel, Label};
+
+#[doc(hidden)]
 pub mod list;
 pub use list::{Item, List, ListItem, ListKind};
 
 #[doc(hidden)]
 pub mod definition_list;
 pub use definition_list::{Definition, DefinitionList, DefinitionListItem, DefinitionPart};
+
+#[doc(hidden)]
+pub mod image;
+pub use image::ImageBlock;
 
 #[doc(hidden)]
 pub mod math;

@@ -1,8 +1,8 @@
 use crate::error;
-use crate::model::block::{BlockContent, Caption, Captioned};
+use crate::model::block::{BlockContent, Caption, Captioned, Label};
 use crate::model::inline::HasInlineContent;
 use crate::model::inline::{Character, InlineContent};
-use crate::model::HasInnerContent;
+use crate::model::{block::HasLabel, HasInnerContent};
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
@@ -24,6 +24,7 @@ pub enum Alignment {
 ///
 #[derive(Clone, Debug)]
 pub struct Table {
+    label: Option<Label>,
     columns: Vec<Column>,
     rows: Vec<Row>,
     caption: Option<Caption>,
@@ -51,6 +52,7 @@ pub struct Row {
 ///
 #[derive(Clone, Debug)]
 pub struct Cell {
+    label: Option<Label>,
     inner: Vec<InlineContent>,
 }
 
@@ -69,12 +71,15 @@ impl Default for Alignment {
 impl Default for Table {
     fn default() -> Self {
         Self {
+            label: None,
             columns: Default::default(),
             rows: Default::default(),
             caption: None,
         }
     }
 }
+
+label_impl!(Table);
 
 block_impls!(Table);
 
@@ -83,6 +88,7 @@ has_captioned_impls!(Table);
 impl Table {
     pub fn new(columns: &[Column]) -> Self {
         Self {
+            label: None,
             columns: columns.to_vec(),
             rows: Default::default(),
             caption: None,
@@ -202,17 +208,21 @@ impl Default for Cell {
     }
 }
 
+label_impl!(Cell);
+
 has_inline_impls!(Cell);
 
 impl Cell {
     pub fn skip() -> Self {
         Self {
+            label: None,
             inner: Default::default(),
         }
     }
 
     pub fn empty() -> Self {
         Self {
+            label: None,
             inner: vec![Character::Space.into()],
         }
     }

@@ -1,41 +1,33 @@
 /*!
-Write the document in one of the well-defined flavors of Markup.
-
-# Flavors
-
-* **[Strict](https://daringfireball.net/projects/markdown/syntax)**; the original
-* **[CommonMark](https://spec.commonmark.org/0.29/)**; . This is the default flavor.
-* **[GitHub](https://github.github.com/gfm/)**;
-* **[Multi](https://rawgit.com/fletcher/MultiMarkdown-6-Syntax-Guide/master/index.html)**;
-* **[PhpExtra](https://michelf.ca/projects/php-markdown/extra/)**;
-
-# Example
-
-```rust
-# use somedoc::model::Document;
-use somedoc::write::OutputFormat;
-use somedoc::write::markdown::{writer, MarkdownFlavor};
-
-# fn make_some_document() -> Document { Document::default() }
-let doc = make_some_document();
-
-writer(&doc, MarkdownFlavor::GitHub, &mut std::io::stdout()).unwrap();
-```
+* Write a document in one of a number of light-weight markdown formats.
+* format.
+*
+* # Example
+*
+* ```rust
+* # use somedoc::model::Document;
+* use somedoc::write::OutputFormat;
+* use somedoc::write::markdown::{writer, MarkdownFlavor};
+*
+* # fn make_some_document() -> Document { Document::default() }
+* let doc = make_some_document();
+*
+* writer(&doc, MarkdownFlavor::GitHub, &mut std::io::stdout()).unwrap();
+* ```
 */
 
 use crate::error;
-use crate::model::block::quote::Quote;
 use crate::model::block::table::Alignment;
-use crate::model::block::{
-    BlockContent, CodeBlock, DefinitionList, DefinitionListItem, Formatted, Heading, HeadingLevel,
-    List, ListItem, Paragraph, Table,
-};
+use crate::model::block::{Caption, Column, HeadingLevel, Label, ListKind};
 use crate::model::document::Metadata;
-use crate::model::inline::{
-    Character, HyperLink, HyperLinkTarget, Image, InlineContent, Span, SpanStyle,
+use crate::model::inline::{Character, HyperLink, HyperLinkTarget, Image, Math, SpanStyle, Text};
+use crate::model::visitor::{
+    walk_document, BlockVisitor, DocumentVisitor, InlineVisitor, TableVisitor,
 };
-use crate::model::{Document, HasInnerContent, HasStyles};
-use crate::write::OutputFormat;
+use crate::model::Document;
+use crate::write::utils::string_of_strings;
+use crate::write::{ConfigurableWriter, OutputFormat, Writer};
+use std::cell::RefCell;
 use std::fmt::{Display, Formatter};
 use std::io::Write;
 use std::str::FromStr;
@@ -44,6 +36,9 @@ use std::str::FromStr;
 // Public Types
 // ------------------------------------------------------------------------------------------------
 
+///
+/// This defines the supported flavors of markdown.
+///
 #[derive(Clone, Debug, PartialEq)]
 pub enum MarkdownFlavor {
     /// See <https://daringfireball.net/projects/markdown/syntax>
@@ -56,42 +51,73 @@ pub enum MarkdownFlavor {
     /// See <https://github.github.com/gfm/>
     GitHub,
 
+    // See <https://docs.gitlab.com/ee/user/markdown.html>
+    // GitLab,
+
+    // See <https://kramdown.gettalong.org/quickref.html>
+    // Kramdown,
+
+    // See <https://pandoc.org/MANUAL.html#pandocs-markdown>
+    // Pandoc,
+
+    // See <https://docutils.sourceforge.io/docs/user/rst/quickref.html>
+    // ReStructuredText,
     /// See <https://rawgit.com/fletcher/MultiMarkdown-6-Syntax-Guide/master/index.html>
     Multi,
 
     /// See <https://michelf.ca/projects/php-markdown/extra/>
     PhpExtra,
+
+    /// See <https://www.xwiki.org/xwiki/bin/view/XWiki/XWikiSyntax?syntax=2.1>
+    XWiki,
+    // See <https://www.mediawiki.org/wiki/Help:Formatting>
+    // MediaWiki,
+
+    // See <https://confluence.atlassian.com/display/CONF20/Confluence+Notation+Guide+Overview>
+    // Confluence,
+}
+
+///
+/// Implementation of the Markdown writer structure, usually this is accessed via the `writer`
+/// function, but may be used directly.
+///
+/// # Example
+///
+/// ```rust
+/// # use somedoc::model::Document;
+/// use somedoc::write::markdown::MarkdownWriter;
+/// use somedoc::write::{write_document_to_string, Writer};
+/// use somedoc::model::visitor::walk_document;
+///
+/// # fn make_some_document() -> Document { Document::default() }
+/// let doc = make_some_document();
+/// let mut out = std::io::stdout();
+/// let writer = MarkdownWriter::new(&mut out);
+/// assert!(walk_document(&doc, &writer).is_ok());
+/// ```
+///
+#[derive(Debug)]
+pub struct MarkdownWriter<'a, W: Write> {
+    flavor: MarkdownFlavor,
+    in_metadata: RefCell<bool>,
+    list_prefix_stack: RefCell<Vec<ListKind>>,
+    line_prefix_stack: RefCell<Vec<String>>,
+    table_sep_row: RefCell<Vec<String>>,
+    w: RefCell<&'a mut W>,
+    debug: bool,
 }
 
 // ------------------------------------------------------------------------------------------------
 // Private Types
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Debug)]
-struct MarkdownWriter<'a, W: Write> {
-    features: &'static Features,
-    block_quoted: u8,
-    w: &'a mut W,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-enum MetadataFlavor {
-    HiddenLinks,
-    #[allow(dead_code)]
-    PercentComment,
-    #[allow(dead_code)]
-    FencedYaml,
-    Yaml,
-}
-
-#[derive(Debug)]
-struct Features {
-    has_tables: bool,
-    has_definition_lists: bool,
-    has_fenced_code_blocks: bool,
-    has_code_syntax: bool,
-    has_strikethrough: bool,
-    metadata: MetadataFlavor,
+enum DebugMark {
+    SOB,
+    EOB,
+    SOQ,
+    EOQ,
+    SOL,
+    EOL,
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -99,7 +125,7 @@ struct Features {
 // ------------------------------------------------------------------------------------------------
 
 ///
-/// Implementation of the writer function for a set of Markdown flavors.
+/// Implementation of the writer function for XWiki.
 ///
 /// While this can be called directly it is most often used  by calling either
 /// [`model::write_document`](../fn.write_document.html) or
@@ -110,88 +136,13 @@ pub fn writer<W: Write>(
     flavor: MarkdownFlavor,
     w: &mut W,
 ) -> crate::error::Result<()> {
-    info!("markdown::writer(.., {}, ..)", flavor);
-    let mut writer = MarkdownWriter::new(flavor, w);
-    write_document(&mut writer, doc)?;
+    let writer = MarkdownWriter::new_with(w, flavor);
+    walk_document(doc, &writer)?;
     Ok(())
 }
 
 // ------------------------------------------------------------------------------------------------
 // Implementations
-// ------------------------------------------------------------------------------------------------
-
-const CODE_INDENT: &str = "    ";
-const CODE_FENCE: &str = "```";
-
-const DEFN_TEXT_PREFIX: &str = ":";
-
-const HEADER: &str = "#";
-
-const LIST_ORDERED_PREFIX: &str = "1.";
-const LIST_ORDERED_INDENT: &str = "   ";
-
-const LIST_UNORDERED_PREFIX: &str = "*";
-const LIST_UNORDERED_INDENT: &str = "  ";
-
-const QUOTE_PREFIX: &str = "> ";
-
-const SPAN_BOLD: &str = "**";
-const SPAN_ITALIC: &str = "*";
-const SPAN_STRIKETHROUGH: &str = "~~";
-
-const THEMATIC_BREAK: &str = "-----";
-
-const TABLE_PIPE: &str = "|";
-const TABLE_BAR: &str = "---";
-const TABLE_ALIGN: &str = ":";
-
-const YAML_FENCE: &str = "-----";
-
-const STRICT_FEATURES: Features = Features {
-    has_tables: false,
-    has_definition_lists: false,
-    has_fenced_code_blocks: false,
-    has_code_syntax: false,
-    has_strikethrough: false,
-    metadata: MetadataFlavor::HiddenLinks,
-};
-
-const COMMONMARK_FEATURES: Features = Features {
-    has_tables: false,
-    has_definition_lists: false,
-    has_fenced_code_blocks: true,
-    has_code_syntax: true,
-    has_strikethrough: false,
-    metadata: MetadataFlavor::HiddenLinks,
-};
-
-const GFM_FEATURES: Features = Features {
-    has_tables: true,
-    has_definition_lists: false,
-    has_fenced_code_blocks: true,
-    has_code_syntax: true,
-    has_strikethrough: true,
-    metadata: MetadataFlavor::HiddenLinks,
-};
-
-const MMD_FEATURES: Features = Features {
-    has_tables: true,
-    has_definition_lists: true,
-    has_fenced_code_blocks: true,
-    has_code_syntax: true,
-    has_strikethrough: false,
-    metadata: MetadataFlavor::Yaml,
-};
-
-const PHP_EXTRA_FEATURES: Features = Features {
-    has_tables: true,
-    has_definition_lists: true,
-    has_fenced_code_blocks: true,
-    has_code_syntax: false,
-    has_strikethrough: false,
-    metadata: MetadataFlavor::HiddenLinks,
-};
-
 // ------------------------------------------------------------------------------------------------
 
 impl Default for MarkdownFlavor {
@@ -206,13 +157,20 @@ impl Display for MarkdownFlavor {
             f,
             "{}",
             match self {
-                MarkdownFlavor::Strict => "strict",
+                MarkdownFlavor::Strict => "markdown",
                 MarkdownFlavor::CommonMark => "commonmark",
                 MarkdownFlavor::GitHub => "gfm",
                 MarkdownFlavor::Multi => "multi",
                 MarkdownFlavor::PhpExtra => "mdextra",
+                MarkdownFlavor::XWiki => "xwiki",
             }
         )
+    }
+}
+
+impl Into<OutputFormat> for MarkdownFlavor {
+    fn into(self) -> OutputFormat {
+        OutputFormat::Markdown(self)
     }
 }
 
@@ -226,558 +184,652 @@ impl FromStr for MarkdownFlavor {
             "gfm" | "github" => Ok(Self::GitHub),
             "mmd" | "multi" => Ok(Self::Multi),
             "php_extra" | "mdextra" => Ok(Self::PhpExtra),
+            "xwiki" => Ok(Self::XWiki),
             _ => Err(error::ErrorKind::UnknownFormat.into()),
         }
     }
 }
 
-impl Into<OutputFormat> for MarkdownFlavor {
-    fn into(self) -> OutputFormat {
-        OutputFormat::Markdown(self)
+impl<'a, W: Write> Writer<'a, W> for MarkdownWriter<'a, W> {
+    fn new(w: &'a mut W) -> Self {
+        Self::new_with(w, Default::default())
+    }
+}
+
+impl<'a, W: Write> ConfigurableWriter<'a, W, MarkdownFlavor> for MarkdownWriter<'a, W> {
+    fn new_with(w: &'a mut W, config: MarkdownFlavor) -> Self {
+        Self {
+            flavor: config,
+            in_metadata: RefCell::from(false),
+            list_prefix_stack: RefCell::from(Vec::default()),
+            line_prefix_stack: RefCell::from(Vec::default()),
+            table_sep_row: RefCell::from(Vec::default()),
+            w: RefCell::from(w),
+            debug: false,
+        }
     }
 }
 
 // ------------------------------------------------------------------------------------------------
 
 impl<'a, W: Write> MarkdownWriter<'a, W> {
-    pub fn new(flavor: MarkdownFlavor, w: &'a mut W) -> Self {
-        Self {
-            features: match flavor {
-                MarkdownFlavor::Strict => &STRICT_FEATURES,
-                MarkdownFlavor::CommonMark => &COMMONMARK_FEATURES,
-                MarkdownFlavor::GitHub => &GFM_FEATURES,
-                MarkdownFlavor::Multi => &MMD_FEATURES,
-                MarkdownFlavor::PhpExtra => &PHP_EXTRA_FEATURES,
-            },
-            block_quoted: 0,
-            w,
+    #[inline]
+    fn debug(&self, mark: DebugMark) -> crate::error::Result<()> {
+        if self.debug {
+            self.write(&mark.to_string())?;
         }
-    }
-}
-
-// ------------------------------------------------------------------------------------------------
-// Private Functions
-// ------------------------------------------------------------------------------------------------
-
-fn write_document<W: Write>(w: &mut MarkdownWriter<W>, content: &Document) -> std::io::Result<()> {
-    debug!("markdown::write_document({:?})", content);
-
-    if content.has_metadata() {
-        write_metadata(w, content.metadata())?;
-        writeln!(w.w)?;
+        Ok(())
     }
 
-    write_blocks(w, content.inner())
-}
-
-fn write_metadata<W: Write>(
-    w: &mut MarkdownWriter<W>,
-    metadata: &Vec<Metadata>,
-) -> std::io::Result<()> {
-    if w.features.metadata == MetadataFlavor::FencedYaml {
-        writeln!(w.w, "{}", YAML_FENCE)?;
-    }
-    for datum in metadata {
-        write_metadatum(w, datum)?;
-    }
-    if w.features.metadata == MetadataFlavor::FencedYaml {
-        writeln!(w.w, "{}", YAML_FENCE)?;
-    }
-    Ok(())
-}
-
-fn write_metadatum<W: Write>(w: &mut MarkdownWriter<W>, datum: &Metadata) -> std::io::Result<()> {
-    fn write_as_link<W: Write>(w: &mut W, k: &str, v: &str) -> std::io::Result<()> {
-        writeln!(w, "[_metadata_:{}]:- \"{}\"", k, v)
-    }
-
-    fn write_as_prop<W: Write>(w: &mut W, k: &str, v: &str, pct: bool) -> std::io::Result<()> {
-        writeln!(w, "{}{}: {}", if pct { "% " } else { "" }, k, v)
-    }
-
-    match datum {
-        Metadata::Author(value) => match &w.features.metadata {
-            MetadataFlavor::HiddenLinks => {
-                write_as_link(
-                    w.w,
-                    "author",
-                    &format!(
-                        "{}{}{}",
-                        value.name,
-                        value
-                            .email
-                            .as_ref()
-                            .map(|s| format!("({})", s))
-                            .unwrap_or_default(),
-                        value
-                            .organization
-                            .as_ref()
-                            .map(|s| format!(" - {}", s))
-                            .unwrap_or_default()
-                    ),
-                )?;
+    fn write(&self, text: &str) -> crate::error::Result<()> {
+        if self.line_prefix_stack.borrow().is_empty() || !text.contains('\n') {
+            // if no prefix stack just let `write!` handle newline processing.
+            write!(&mut self.w.borrow_mut(), "{}", text)?;
+        } else {
+            for line in text.split('\n') {
+                self.write(line)?;
+                self.end_line()?;
+                self.start_line()?;
             }
-            MetadataFlavor::PercentComment => {
-                writeln!(
-                    w.w,
-                    "% author: {}{}{}",
-                    value.name,
-                    value
-                        .email
-                        .as_ref()
-                        .map(|s| format!("({})", s))
-                        .unwrap_or_default(),
-                    value
-                        .organization
-                        .as_ref()
-                        .map(|s| format!(" - {}", s))
-                        .unwrap_or_default()
-                )?;
+            if text.ends_with('\n') {
+                self.end_line()?;
             }
-            MetadataFlavor::FencedYaml | MetadataFlavor::Yaml => {
-                writeln!(w.w, "author:")?;
-                writeln!(w.w, "- name: {}", value.name)?;
-                if let Some(email) = &value.email {
-                    writeln!(w.w, "  email: {}", &email)?;
+        }
+        Ok(())
+    }
+
+    fn start_line(&self) -> crate::error::Result<()> {
+        self.debug(DebugMark::SOL)?;
+        if !self.line_prefix_stack.borrow().is_empty() {
+            let prefix = self.line_prefix_stack.borrow().join("");
+            self.write(&format!("{} ", prefix))?;
+        }
+        Ok(())
+    }
+
+    fn end_line(&self) -> crate::error::Result<()> {
+        self.debug(DebugMark::EOL)?;
+        writeln!(&mut self.w.borrow_mut())?;
+        Ok(())
+    }
+
+    fn make_style_stack(&self, styles: &Vec<SpanStyle>) -> Vec<&str> {
+        let mut style_stack = Vec::new();
+        for style in styles {
+            match style {
+                SpanStyle::Plain => {
+                    style_stack.clear();
                 }
-                if let Some(organization) = &value.organization {
-                    writeln!(w.w, "  organization: {}", &organization)?;
-                }
-            }
-        },
-        Metadata::Class(value) => {
-            if w.features.metadata == MetadataFlavor::HiddenLinks {
-                write_as_link(w.w, "css", &value.name_or_path)?;
-            } else {
-                write_as_prop(
-                    w.w,
-                    "css",
-                    &value.name_or_path,
-                    w.features.metadata == MetadataFlavor::PercentComment,
-                )?;
-            }
-        }
-        Metadata::Copyright(value) => {
-            let copyright = format!(
-                "{}{}{}",
-                value.year,
-                value
-                    .organization
-                    .as_ref()
-                    .map(|s| format!(" {}.", s))
-                    .unwrap_or_default(),
-                value
-                    .comment
-                    .as_ref()
-                    .map(|s| format!(" - {}.", s))
-                    .unwrap_or_default()
-            );
-            if w.features.metadata == MetadataFlavor::HiddenLinks {
-                write_as_link(w.w, "copyright", &copyright)?;
-            } else {
-                write_as_prop(
-                    w.w,
-                    "copyright",
-                    &copyright,
-                    w.features.metadata == MetadataFlavor::PercentComment,
-                )?;
-            }
-        }
-        Metadata::Date(value) => {
-            if w.features.metadata == MetadataFlavor::HiddenLinks {
-                write_as_link(w.w, "date", value)?;
-            } else {
-                write_as_prop(
-                    w.w,
-                    "date",
-                    value,
-                    w.features.metadata == MetadataFlavor::PercentComment,
-                )?;
-            }
-        }
-        Metadata::Keywords(value) => {
-            let keywords = format!("[{}]", value.join(", "));
-            if w.features.metadata == MetadataFlavor::HiddenLinks {
-                write_as_link(w.w, "keywords", &keywords)?;
-            } else {
-                write_as_prop(
-                    w.w,
-                    "keywords",
-                    &keywords,
-                    w.features.metadata == MetadataFlavor::PercentComment,
-                )?;
-            }
-        }
-        Metadata::Revision(value) => {
-            if w.features.metadata == MetadataFlavor::HiddenLinks {
-                write_as_link(w.w, "revision", value)?;
-            } else {
-                write_as_prop(
-                    w.w,
-                    "revision",
-                    value,
-                    w.features.metadata == MetadataFlavor::PercentComment,
-                )?;
-            }
-        }
-        Metadata::Status(value) => {
-            if w.features.metadata == MetadataFlavor::HiddenLinks {
-                write_as_link(w.w, "status", value)?;
-            } else {
-                write_as_prop(
-                    w.w,
-                    "status",
-                    value,
-                    w.features.metadata == MetadataFlavor::PercentComment,
-                )?;
-            }
-        }
-        Metadata::Title(value) => {
-            if w.features.metadata == MetadataFlavor::HiddenLinks {
-                write_as_link(w.w, "title", value)?;
-            } else {
-                write_as_prop(
-                    w.w,
-                    "title",
-                    value,
-                    w.features.metadata == MetadataFlavor::PercentComment,
-                )?;
-            }
-        }
-        Metadata::Other(value) => {
-            if w.features.metadata == MetadataFlavor::HiddenLinks {
-                write_as_link(w.w, &value.name, &value.value)?;
-            } else {
-                write_as_prop(
-                    w.w,
-                    &value.name,
-                    &value.value,
-                    w.features.metadata == MetadataFlavor::PercentComment,
-                )?;
-            }
-        }
-    }
-
-    Ok(())
-}
-
-fn write_blocks<W: Write>(
-    w: &mut MarkdownWriter<W>,
-    content: &Vec<BlockContent>,
-) -> std::io::Result<()> {
-    debug!("markdown::write_blocks({:?})", content);
-    let count = content.len();
-    for (idx, item) in content.iter().enumerate() {
-        write_quote_prefix(w)?;
-        match item {
-            BlockContent::Comment(_) => Ok(()),
-            BlockContent::Heading(content) => write_heading(w, content),
-            BlockContent::Image(content) => write_image(w, content, false),
-            BlockContent::List(content) => write_list(w, content, 0),
-            BlockContent::DefinitionList(content) => {
-                if w.features.has_definition_lists {
-                    write_definition_list(w, content)
-                } else {
-                    Ok(())
-                }
-            }
-            BlockContent::CodeBlock(content) => write_code_block(w, content),
-            BlockContent::Formatted(content) => write_formatted(w, content),
-            BlockContent::Paragraph(content) => write_paragraph(w, content),
-            BlockContent::Quote(content) => write_quote(w, content),
-            BlockContent::Table(content) => write_table(w, content),
-            BlockContent::ThematicBreak => writeln!(w.w, "{}\n", THEMATIC_BREAK),
-            BlockContent::MathBlock(_) => Ok(()),
-        }?;
-        if idx < count - 1 {
-            write_quote_prefix(w)?;
-        }
-    }
-    Ok(())
-}
-
-fn write_heading<W: Write>(w: &mut MarkdownWriter<W>, content: &Heading) -> std::io::Result<()> {
-    debug!("markdown::write_heading({:?})", content);
-    let depth = content.level_as_u8();
-    if depth >= HeadingLevel::Section as u8 {
-        for _ in 0..depth {
-            write!(w.w, "{}", HEADER)?;
-        }
-        write!(w.w, " ")?;
-        write_inlines(w, content.inner())?;
-        writeln!(w.w)?;
-        writeln!(w.w)?;
-    }
-    Ok(())
-}
-
-fn write_image<W: Write>(
-    w: &mut MarkdownWriter<W>,
-    content: &Image,
-    inline: bool,
-) -> std::io::Result<()> {
-    debug!("markdown::write_image({:?})", content);
-    write!(w.w, "!")?;
-    write_link(w, content.link())?;
-    if !inline {
-        writeln!(w.w)?;
-        writeln!(w.w)?;
-    }
-    Ok(())
-}
-
-fn write_list<W: Write>(
-    w: &mut MarkdownWriter<W>,
-    content: &List,
-    indent: usize,
-) -> std::io::Result<()> {
-    debug!("markdown::write_list({:?}, {})", content, indent);
-    for item in content.inner() {
-        match item {
-            ListItem::List(sub_list) => {
-                write_list(w, sub_list, indent + 1)?;
-            }
-            ListItem::Item(item) => {
-                write_quote_prefix(w)?;
-                if content.is_ordered() {
-                    for _ in 0..indent {
-                        write!(w.w, "{}", LIST_ORDERED_INDENT)?;
+                SpanStyle::Italic => {
+                    if self.flavor == MarkdownFlavor::XWiki {
+                        style_stack.push("//")
+                    } else {
+                        style_stack.push("*")
                     }
-                    write!(w.w, "{} ", LIST_ORDERED_PREFIX)?;
-                } else {
-                    for _ in 0..indent {
-                        write!(w.w, "{}", LIST_UNORDERED_INDENT)?;
+                }
+                SpanStyle::Bold => style_stack.push("**"),
+                SpanStyle::Mono | SpanStyle::Code => {
+                    if self.flavor == MarkdownFlavor::XWiki {
+                        style_stack.push("##")
+                    } else {
+                        style_stack.push("`")
                     }
-                    write!(w.w, "{} ", LIST_UNORDERED_PREFIX)?;
                 }
-                write_inlines(w, item.inner())?;
-                writeln!(w.w)?;
+                SpanStyle::Strikethrough => {
+                    if self.flavor == MarkdownFlavor::GitHub {
+                        style_stack.push("~~")
+                    } else if self.flavor == MarkdownFlavor::XWiki {
+                        style_stack.push("--")
+                    }
+                }
+                SpanStyle::Underline => {
+                    if self.flavor == MarkdownFlavor::XWiki {
+                        style_stack.push("__")
+                    }
+                }
+                SpanStyle::Superscript => {
+                    if self.flavor == MarkdownFlavor::XWiki {
+                        style_stack.push("^^")
+                    }
+                }
+                SpanStyle::Subscript => {
+                    if self.flavor == MarkdownFlavor::XWiki {
+                        style_stack.push(",,")
+                    }
+                }
+                _ => {}
+            };
+        }
+        style_stack
+    }
+}
+
+impl<'a, W: Write> DocumentVisitor for MarkdownWriter<'a, W> {
+    fn metadata(&self, meta_datum: &Metadata) -> crate::error::Result<()> {
+        if !self.in_metadata.replace(true) {
+            match &self.flavor {
+                MarkdownFlavor::GitHub | MarkdownFlavor::Multi => {
+                    let _ = self.write("---");
+                    let _ = self.end_line();
+                }
+                MarkdownFlavor::XWiki => {
+                    let _ = self.write("{{comment}}");
+                    let _ = self.end_line();
+                }
+                _ => {}
             }
         }
-    }
-    if indent == 0 {
-        writeln!(w.w)?;
-    }
-    Ok(())
-}
-
-fn write_definition_list<W: Write>(
-    w: &mut MarkdownWriter<W>,
-    content: &DefinitionList,
-) -> std::io::Result<()> {
-    debug!("markdown::write_definition_list({:?})", content);
-    for item in content.inner() {
-        match item {
-            DefinitionListItem::List(sub_list) => {
-                write_definition_list(w, sub_list)?;
+        match &self.flavor {
+            MarkdownFlavor::Strict
+            | MarkdownFlavor::CommonMark
+            | MarkdownFlavor::GitHub
+            | MarkdownFlavor::Multi
+            | MarkdownFlavor::PhpExtra => {
+                let _ = self.write(&format!(
+                    "[_metadata_:{}]:- \"{}\"",
+                    meta_datum.key(),
+                    meta_datum.value_string()
+                ));
             }
-            DefinitionListItem::Item(item) => {
-                write_quote_prefix(w)?;
-
-                write_inlines(w, item.term().inner())?;
-                writeln!(w.w)?;
-
-                write!(w.w, "{} ", DEFN_TEXT_PREFIX)?;
-                write_inlines(w, item.text().inner())?;
-                writeln!(w.w)?;
+            MarkdownFlavor::XWiki => {
+                let _ = self.write(&format!("{}", meta_datum.yaml_string()));
             }
         }
+        self.end_line()?;
+        Ok(())
     }
-    Ok(())
-}
 
-fn write_quote_prefix<W: Write>(w: &mut MarkdownWriter<W>) -> std::io::Result<()> {
-    for _ in 0..w.block_quoted {
-        write!(w.w, "{}", QUOTE_PREFIX)?;
-    }
-    Ok(())
-}
-
-fn write_paragraph<W: Write>(
-    w: &mut MarkdownWriter<W>,
-    content: &Paragraph,
-) -> std::io::Result<()> {
-    debug!("markdown::write_paragraph({:?})", content);
-    write_inlines(w, content.inner())?;
-    writeln!(w.w)?;
-    writeln!(w.w)
-}
-
-fn write_quote<W: Write>(w: &mut MarkdownWriter<W>, content: &Quote) -> std::io::Result<()> {
-    debug!("markdown::write_quote({:?})", content);
-    w.block_quoted = w.block_quoted + 1;
-    write_blocks(w, content.inner())?;
-    w.block_quoted = w.block_quoted - 1;
-    Ok(())
-}
-
-fn write_table<W: Write>(w: &mut MarkdownWriter<W>, content: &Table) -> std::io::Result<()> {
-    debug!("markdown::write_table({:?})", content);
-    if !content.columns().is_empty() {
-        let mut sep = String::new();
-        for column in content.columns() {
-            write!(w.w, "{} {} ", TABLE_PIPE, column.label())?;
-            sep.push_str(&match column.alignment() {
-                Alignment::Default => format!("{} {}- ", TABLE_PIPE, TABLE_BAR),
-                Alignment::Left => format!("{} {}{} ", TABLE_PIPE, TABLE_ALIGN, TABLE_BAR),
-                Alignment::Right => format!("{} {}{} ", TABLE_PIPE, TABLE_BAR, TABLE_ALIGN),
-                Alignment::Centered => format!(
-                    "{} {}{}{} ",
-                    TABLE_PIPE, TABLE_ALIGN, TABLE_BAR, TABLE_ALIGN
-                ),
-            });
+    fn block_visitor(&self) -> Option<&dyn BlockVisitor> {
+        if self.in_metadata.replace(false) {
+            match self.flavor {
+                MarkdownFlavor::GitHub | MarkdownFlavor::Multi => {
+                    let _ = self.write("---");
+                    let _ = self.end_line();
+                }
+                MarkdownFlavor::XWiki => {
+                    let _ = self.write("{{/comment}}");
+                    let _ = self.end_line();
+                }
+                _ => {}
+            }
+            let _ = self.end_line();
         }
-        writeln!(w.w, "{}", TABLE_PIPE)?;
+        Some(self)
+    }
+}
 
-        write_quote_prefix(w)?;
-        writeln!(w.w, "{} {}", sep, TABLE_PIPE)?;
+impl<'a, W: Write> BlockVisitor for MarkdownWriter<'a, W> {
+    fn start_block(&self) -> crate::error::Result<()> {
+        self.debug(DebugMark::SOB)?;
+        self.end_line()?;
+        self.start_line()
+    }
 
-        for row in content.rows() {
-            write_quote_prefix(w)?;
-            for cell in row.cells() {
-                if cell.has_inner() {
-                    write!(w.w, "{} ", TABLE_PIPE)?;
-                    write_inlines(w, cell.inner())?;
-                    write!(w.w, " ")?;
+    fn comment(&self, value: &str) -> crate::error::Result<()> {
+        match self.flavor {
+            MarkdownFlavor::Strict
+            | MarkdownFlavor::CommonMark
+            | MarkdownFlavor::GitHub
+            | MarkdownFlavor::Multi
+            | MarkdownFlavor::PhpExtra => {
+                for line in value.split('\n') {
+                    self.write(&format!("[//]: # \"{}\"", line))?;
+                    self.end_line()?;
+                    self.start_line()?;
+                }
+            }
+            MarkdownFlavor::XWiki => {
+                self.write(&format!("{{{{comment}}}}\n{}\n{{{{/comment}}}}", value,))?;
+                self.end_line()?;
+            }
+        }
+        Ok(())
+    }
+
+    fn start_heading(
+        &self,
+        level: &HeadingLevel,
+        _label: &Option<Label>,
+    ) -> crate::error::Result<()> {
+        self.write(&format!(
+            "{} ",
+            string_of_strings(
+                if self.flavor == MarkdownFlavor::XWiki {
+                    "="
                 } else {
-                    write!(w.w, "{}", TABLE_PIPE)?;
+                    "#"
+                },
+                level.clone() as usize
+            )
+        ))
+    }
+
+    fn end_heading(
+        &self,
+        level: &HeadingLevel,
+        _label: &Option<Label>,
+    ) -> crate::error::Result<()> {
+        if self.flavor == MarkdownFlavor::XWiki {
+            let mut s = String::new();
+            for _ in 0..level.clone() as usize {
+                s.push_str("=");
+            }
+            self.write(&format!(" {}", s))?;
+        }
+        Ok(())
+    }
+
+    fn image(
+        &self,
+        value: &Image,
+        _caption: &Option<Caption>,
+        _label: &Option<Label>,
+    ) -> crate::error::Result<()> {
+        if let Some(inline_visitor) = BlockVisitor::inline_visitor(self) {
+            self.end_line()?;
+            self.start_line()?;
+            inline_visitor.image(value)?;
+        }
+        Ok(())
+    }
+
+    fn math(
+        &self,
+        value: &Math,
+        _caption: &Option<Caption>,
+        _label: &Option<Label>,
+    ) -> crate::error::Result<()> {
+        if let Some(inline_visitor) = BlockVisitor::inline_visitor(self) {
+            self.end_line()?;
+            self.start_line()?;
+            inline_visitor.math(value)?;
+        }
+        Ok(())
+    }
+
+    fn start_list(&self, kind: &ListKind, _label: &Option<Label>) -> crate::error::Result<()> {
+        self.list_prefix_stack.borrow_mut().push(kind.clone());
+        Ok(())
+    }
+
+    fn end_list(&self, _: &ListKind, _label: &Option<Label>) -> crate::error::Result<()> {
+        let _ = self.list_prefix_stack.borrow_mut().pop();
+        Ok(())
+    }
+
+    fn start_list_item(&self, _label: &Option<Label>) -> crate::error::Result<()> {
+        let list_stack = self.list_prefix_stack.borrow();
+        if !list_stack.is_empty() {
+            let length = if self.flavor == MarkdownFlavor::XWiki {
+                list_stack.len()
+            } else {
+                list_stack.len() - 1
+            };
+            for kind in list_stack.iter().take(length) {
+                if self.flavor == MarkdownFlavor::XWiki {
+                    self.write(match kind {
+                        ListKind::Ordered => "1",
+                        ListKind::Unordered => "*",
+                    })?;
+                } else {
+                    self.write(match kind {
+                        ListKind::Ordered => "   ",
+                        ListKind::Unordered => "  ",
+                    })?;
                 }
             }
-            writeln!(w.w, "{}", TABLE_PIPE)?;
-        }
-    }
-    writeln!(w.w)
-}
-
-fn write_formatted<W: Write>(
-    w: &mut MarkdownWriter<W>,
-    content: &Formatted,
-) -> std::io::Result<()> {
-    debug!("markdown::write_formatted({:?})", content);
-    for line in content.inner().split('\n') {
-        writeln!(w.w, "{}{}", CODE_INDENT, line)?;
-    }
-    writeln!(w.w)
-}
-
-fn write_code_block<W: Write>(
-    w: &mut MarkdownWriter<W>,
-    content: &CodeBlock,
-) -> std::io::Result<()> {
-    debug!("markdown::write_code_block({:?})", content);
-    if w.features.has_fenced_code_blocks {
-        write!(w.w, "{}", CODE_FENCE)?;
-        if w.features.has_code_syntax {
-            if let Some(language) = content.language() {
-                write!(w.w, "{}", language)?;
+            if let Some(kind) = list_stack.last() {
+                if self.flavor == MarkdownFlavor::XWiki {
+                    if *kind == ListKind::Ordered {
+                        self.write(".")?;
+                    }
+                    self.write(" ")?;
+                } else {
+                    if *kind == ListKind::Ordered {
+                        self.write("1. ")?;
+                    } else {
+                        self.write("* ")?;
+                    }
+                }
             }
         }
-        writeln!(w.w)?;
-        writeln!(w.w, "{}", content.code())?;
-        writeln!(w.w, "{}", CODE_FENCE)?;
-    } else {
-        for line in content.code().split('\n') {
-            writeln!(w.w, "{}{}", CODE_INDENT, line)?;
-        }
+        Ok(())
     }
-    writeln!(w.w)
-}
 
-fn write_inlines<W: Write>(
-    w: &mut MarkdownWriter<W>,
-    content: &Vec<InlineContent>,
-) -> std::io::Result<()> {
-    debug!("markdown::write_inlines({:?})", content);
-    for item in content {
-        match item {
-            // TODO: all local refs need alt text.
-            InlineContent::HyperLink(value) => write_link(w, value)?,
-            InlineContent::Anchor(_) => {}
-            InlineContent::Image(image) => write_image(w, image, true)?,
-            InlineContent::Text(value) => write!(w.w, "{}", value.inner())?,
-            InlineContent::Character(value) => write_character(w, value)?,
-            InlineContent::LineBreak => {
-                writeln!(w.w, "  ")?;
+    fn end_list_item(&self, _label: &Option<Label>) -> crate::error::Result<()> {
+        self.end_line()
+    }
+
+    fn start_definition_list_term(&self, _label: &Option<Label>) -> crate::error::Result<()> {
+        match self.flavor {
+            MarkdownFlavor::Multi | MarkdownFlavor::PhpExtra => {
+                // Do nothing
             }
-            InlineContent::Span(value) => write_span(w, value)?,
-            InlineContent::Math(_) => {}
+            MarkdownFlavor::XWiki => {
+                write!(self.w.borrow_mut(), "; ")?;
+            }
+            _ => {
+                write!(self.w.borrow_mut(), "**")?;
+            }
+        }
+        Ok(())
+    }
+
+    fn end_definition_list_term(&self, _label: &Option<Label>) -> crate::error::Result<()> {
+        match self.flavor {
+            MarkdownFlavor::Multi | MarkdownFlavor::PhpExtra | MarkdownFlavor::XWiki => {
+                self.end_line()?;
+                self.start_line()?;
+            }
+            _ => {
+                write!(self.w.borrow_mut(), "**:- ")?;
+            }
+        }
+        Ok(())
+    }
+
+    fn start_definition_list_text(&self) -> crate::error::Result<()> {
+        match self.flavor {
+            MarkdownFlavor::Multi | MarkdownFlavor::PhpExtra | MarkdownFlavor::XWiki => {
+                write!(self.w.borrow_mut(), ": ")?;
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+
+    fn formatted(&self, value: &String, _label: &Option<Label>) -> crate::error::Result<()> {
+        match self.flavor {
+            MarkdownFlavor::Strict
+            | MarkdownFlavor::CommonMark
+            | MarkdownFlavor::GitHub
+            | MarkdownFlavor::Multi
+            | MarkdownFlavor::PhpExtra => {
+                self.line_prefix_stack.borrow_mut().push("    ".to_string());
+                self.write(&format!("    {}\n", value))?;
+                let _ = self.line_prefix_stack.borrow_mut().pop();
+            }
+            MarkdownFlavor::XWiki => {
+                self.write(&format!("{{{{{{\n{}\n}}}}}}", value))?;
+            }
+        }
+        Ok(())
+    }
+
+    fn code_block(
+        &self,
+        code: &String,
+        language: &Option<String>,
+        _caption: &Option<Caption>,
+        _label: &Option<Label>,
+    ) -> crate::error::Result<()> {
+        match self.flavor {
+            MarkdownFlavor::Strict => {
+                self.line_prefix_stack.borrow_mut().push("    ".to_string());
+                self.write(&format!("    {}", code))?;
+                let _ = self.line_prefix_stack.borrow_mut().pop();
+            }
+            MarkdownFlavor::CommonMark | MarkdownFlavor::GitHub | MarkdownFlavor::Multi => {
+                if let Some(language) = language {
+                    self.write(&format!("```{}\n{}\n```", language, code))?;
+                } else {
+                    self.write(&format!("```\n{}\n```", code))?;
+                }
+            }
+            MarkdownFlavor::PhpExtra => {
+                self.write(&format!("```\n{}\n```\n", code))?;
+            }
+            MarkdownFlavor::XWiki => {
+                if let Some(language) = language {
+                    self.write(&format!(
+                        "{{{{code language=\"{}\"}}}}\n{}\n{{{{/code}}}}",
+                        language, code
+                    ))?;
+                } else {
+                    self.write(&format!("{{{{code}}}}\n{}\n{{{{/code}}}}", code))?;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn start_quote(&self, _label: &Option<Label>) -> crate::error::Result<()> {
+        self.debug(DebugMark::SOQ)?;
+        let mut line_prefix_stack = self.line_prefix_stack.borrow_mut();
+        if self.flavor == MarkdownFlavor::XWiki {
+            if line_prefix_stack.is_empty() {
+                line_prefix_stack.push(">".to_string());
+            } else {
+                line_prefix_stack.push(" >".to_string());
+            }
+        } else {
+            line_prefix_stack.push(">".to_string());
+        }
+        Ok(())
+    }
+
+    fn end_quote(&self, _label: &Option<Label>) -> crate::error::Result<()> {
+        self.debug(DebugMark::EOQ)?;
+        let _ = self.line_prefix_stack.borrow_mut().pop();
+        Ok(())
+    }
+
+    fn thematic_break(&self) -> crate::error::Result<()> {
+        self.write("-----")
+    }
+
+    fn end_block(&self) -> crate::error::Result<()> {
+        self.debug(DebugMark::EOB)?;
+        self.end_line()?;
+        self.start_line()
+    }
+
+    fn table_visitor(&self) -> Option<&dyn TableVisitor> {
+        match self.flavor {
+            MarkdownFlavor::GitHub
+            | MarkdownFlavor::Multi
+            | MarkdownFlavor::PhpExtra
+            | MarkdownFlavor::XWiki => Some(self),
+            _ => None,
         }
     }
-    Ok(())
+
+    fn inline_visitor(&self) -> Option<&dyn InlineVisitor> {
+        Some(self)
+    }
 }
 
-fn write_span<W: Write>(w: &mut MarkdownWriter<W>, content: &Span) -> std::io::Result<()> {
-    let mut style_stack = Vec::new();
-    for style in content.styles() {
-        let delim: &str = match style {
-            SpanStyle::Plain => {
-                style_stack.clear();
+impl<'a, W: Write> TableVisitor for MarkdownWriter<'a, W> {
+    fn start_table(
+        &self,
+        _caption: &Option<Caption>,
+        _label: &Option<Label>,
+    ) -> crate::error::Result<()> {
+        Ok(())
+    }
+
+    fn start_table_header_row(&self) -> crate::error::Result<()> {
+        Ok(())
+    }
+
+    fn table_header_cell(
+        &self,
+        column_cell: &Column,
+        _column_idx: usize,
+    ) -> crate::error::Result<()> {
+        self.write(&format!(
+            "|{}{}",
+            if self.flavor == MarkdownFlavor::XWiki {
+                "="
+            } else {
+                self.table_sep_row.borrow_mut().push(
+                    match column_cell.alignment() {
+                        Alignment::Default => "-----",
+                        Alignment::Left => ":----",
+                        Alignment::Right => "----:",
+                        Alignment::Centered => "--:--",
+                    }
+                    .to_string(),
+                );
                 ""
-            }
-            SpanStyle::Bold => SPAN_BOLD,
-            SpanStyle::Italic => SPAN_ITALIC,
-            SpanStyle::Mono | SpanStyle::Code => "`",
-            SpanStyle::Strikethrough => {
-                if w.features.has_strikethrough {
-                    SPAN_STRIKETHROUGH
-                } else {
-                    ""
-                }
-            }
-            _ => "",
-        };
-        write!(w.w, "{}", delim)?;
-        style_stack.push(delim);
+            },
+            column_cell.label()
+        ))
     }
-    write_inlines(w, content.inner())?;
-    for delim in style_stack.iter().rev() {
-        write!(w.w, "{}", delim)?;
-    }
-    Ok(())
-}
 
-fn write_character<W: Write>(
-    w: &mut MarkdownWriter<W>,
-    content: &Character,
-) -> std::io::Result<()> {
-    write!(
-        w.w,
-        "{}",
-        match content {
-            Character::Space => " ".to_string(),
-            Character::NonBreakSpace => "&nbsp;".to_string(),
-            Character::Hyphen => "-".to_string(),
-            Character::EmDash => "---".to_string(),
-            Character::EnDash => "--".to_string(),
-            Character::Emoji(name) => format!(":{}:", name.inner()),
-            Character::Other(c) => c.to_string(),
+    fn end_table_header_row(&self) -> crate::error::Result<()> {
+        self.write("|")?;
+        self.end_line()?;
+        self.start_line()?;
+        if self.flavor != MarkdownFlavor::XWiki {
+            self.write(&format!("|{}|", self.table_sep_row.borrow().join("|")))?;
+            self.table_sep_row.borrow_mut().clear();
+            self.end_line()?;
+            self.start_line()?;
         }
-    )
+        Ok(())
+    }
+
+    fn start_table_row(&self, _: usize) -> crate::error::Result<()> {
+        Ok(())
+    }
+
+    fn start_table_cell(&self, _: usize, _label: &Option<Label>) -> crate::error::Result<()> {
+        self.write("|")
+    }
+
+    fn end_table_cell(&self, _: usize, _label: &Option<Label>) -> crate::error::Result<()> {
+        Ok(())
+    }
+
+    fn end_table_row(&self, _: usize) -> crate::error::Result<()> {
+        self.write("|")?;
+        self.end_line()?;
+        self.start_line()
+    }
+
+    fn inline_visitor(&self) -> Option<&dyn InlineVisitor> {
+        Some(self)
+    }
 }
 
-fn write_link<W: Write>(w: &mut MarkdownWriter<W>, content: &HyperLink) -> std::io::Result<()> {
-    if let Some(alt_text) = &content.alt_text() {
-        write!(w.w, "[{}]", alt_text.inner())?;
-    } else {
-        write!(w.w, "<")?;
+impl<'a, W: Write> InlineVisitor for MarkdownWriter<'a, W> {
+    // fn anchor(&self, value: &Anchor) -> crate::error::Result<()> {
+    //     if self.flavor == MarkdownFlavor::XWiki {
+    //         self.write(&format!("(% id=\"{}\" %)", value.inner()))?;
+    //     }
+    //     Ok(())
+    // }
+
+    fn link(&self, value: &HyperLink) -> crate::error::Result<()> {
+        let mut w = self.w.borrow_mut();
+        write!(w, "[[")?;
+        if let Some(alt_text) = value.caption() {
+            write!(w, "{}", alt_text.inner())?;
+            write!(w, ">>")?;
+        }
+        match value.target() {
+            HyperLinkTarget::External(value) => write!(w, "{}]]", value)?,
+            HyperLinkTarget::Internal(value) => write!(
+                w,
+                ".||anchor=H{}]]",
+                value
+                    .inner()
+                    .trim()
+                    .replace(" ", "")
+                    .replace("(", "28")
+                    .replace(")", "29")
+            )?,
+        }
+        Ok(())
     }
-    match content.target() {
-        HyperLinkTarget::External(value) => write!(w.w, "{}", value)?,
-        HyperLinkTarget::Internal(value) => write!(
-            w.w,
-            "#{}",
-            value
-                .inner()
-                .to_lowercase()
-                .trim()
-                .replace(" ", "-")
-                .replace(&['(', ')', ',', '\"', '.', ';', ':', '\''][..], "")
-        )?,
+
+    fn image(&self, value: &Image) -> crate::error::Result<()> {
+        let prefix = if self.flavor == MarkdownFlavor::XWiki {
+            "image:"
+        } else {
+            "!"
+        };
+        self.write(prefix)?;
+        self.link(value.link())?;
+        Ok(())
     }
-    if let Some(_) = content.alt_text() {
-        write!(w.w, ")")?;
-    } else {
-        write!(w.w, ">")?;
+
+    fn text(&self, value: &Text) -> crate::error::Result<()> {
+        self.write(value.inner())
     }
-    Ok(())
+
+    fn math(&self, value: &Math) -> crate::error::Result<()> {
+        if self.flavor == MarkdownFlavor::XWiki {
+            self.write(&format!("{{{{formula}}}}{}{{{{/formula}}}}", value.inner()))?;
+        }
+        Ok(())
+    }
+
+    fn character(&self, value: &Character) -> crate::error::Result<()> {
+        write!(
+            &mut self.w.borrow_mut(),
+            "{}",
+            match value {
+                Character::Space => " ".to_string(),
+                Character::NonBreakSpace => "&nbsp;".to_string(),
+                Character::Hyphen => "-".to_string(),
+                Character::EmDash => "---".to_string(),
+                Character::EnDash => "--".to_string(),
+                Character::Emoji(name) => format!(":{}:", name.inner()),
+                Character::Other(c) => c.to_string(),
+            }
+        )?;
+        Ok(())
+    }
+
+    fn line_break(&self) -> crate::error::Result<()> {
+        if self.flavor == MarkdownFlavor::XWiki {
+            self.write(" \\")?;
+        } else {
+            self.write("  \n")?;
+        }
+        Ok(())
+    }
+
+    fn start_span(&self, styles: &Vec<SpanStyle>) -> crate::error::Result<()> {
+        let style_stack = self.make_style_stack(styles);
+        if !style_stack.is_empty() {
+            self.write(&style_stack.join(""))?;
+        }
+        Ok(())
+    }
+
+    fn end_span(&self, styles: &Vec<SpanStyle>) -> crate::error::Result<()> {
+        let style_stack = self.make_style_stack(styles);
+        if !style_stack.is_empty() {
+            self.write(
+                &style_stack
+                    .into_iter()
+                    .rev()
+                    .collect::<Vec<&str>>()
+                    .join(""),
+            )?;
+        }
+        Ok(())
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
+
+impl Display for DebugMark {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                DebugMark::SOB => "⤷",
+                DebugMark::EOB => "⤶",
+                DebugMark::SOQ => "«",
+                DebugMark::EOQ => "»",
+                DebugMark::SOL => "⇒",
+                DebugMark::EOL => "⇐",
+            }
+        )
+    }
 }

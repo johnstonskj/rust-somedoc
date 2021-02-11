@@ -19,6 +19,6 @@ proptest! {
     #[test]
     fn doesnt_crash(s in "\\PC*", l in "\\PC*") {
         let _ = HyperLink::external(&s);
-        let _ = HyperLink::external_with_label_str(&s, &l);
+        let _ = HyperLink::external_with_caption_str(&s, &l);
     }
 }

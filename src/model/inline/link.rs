@@ -1,4 +1,5 @@
-use crate::model::inline::{Anchor, InlineContent, Text};
+use crate::model::block::Label;
+use crate::model::inline::{InlineContent, Text};
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
@@ -10,7 +11,7 @@ use crate::model::inline::{Anchor, InlineContent, Text};
 #[derive(Clone, Debug, PartialEq)]
 pub enum HyperLinkTarget {
     External(String),
-    Internal(Anchor),
+    Internal(Label),
 }
 
 ///
@@ -19,7 +20,7 @@ pub enum HyperLinkTarget {
 #[derive(Clone, Debug)]
 pub struct HyperLink {
     target: HyperLinkTarget,
-    alt_text: Option<Text>,
+    caption: Option<Text>,
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -28,8 +29,8 @@ pub struct HyperLink {
 
 inline_impls!(HyperLink);
 
-impl From<Anchor> for HyperLink {
-    fn from(a: Anchor) -> Self {
+impl From<Label> for HyperLink {
+    fn from(a: Label) -> Self {
         Self::internal(a)
     }
 }
@@ -39,37 +40,37 @@ impl HyperLink {
         Self::new_external(target, None)
     }
 
-    pub fn external_with_label(target: &str, alt_text: Text) -> Self {
-        Self::new_external(target, Some(alt_text))
+    pub fn external_with_caption(target: &str, caption: Text) -> Self {
+        Self::new_external(target, Some(caption))
     }
 
-    pub fn external_with_label_str(target: &str, alt_text: &str) -> Self {
-        Self::new_external(target, Some(alt_text.into()))
+    pub fn external_with_caption_str(target: &str, caption: &str) -> Self {
+        Self::new_external(target, Some(caption.into()))
     }
 
-    pub fn internal(target: Anchor) -> Self {
+    pub fn internal(target: Label) -> Self {
         Self::new_internal(target, None)
     }
 
-    pub fn internal_with_label(target: Anchor, alt_text: Text) -> Self {
-        Self::new_internal(target, Some(alt_text))
+    pub fn internal_with_caption(target: Label, caption: Text) -> Self {
+        Self::new_internal(target, Some(caption))
     }
 
-    pub fn internal_with_label_str(target: Anchor, alt_text: &str) -> Self {
-        Self::new_internal(target, Some(alt_text.into()))
+    pub fn internal_with_caption_str(target: Label, caption: &str) -> Self {
+        Self::new_internal(target, Some(caption.into()))
     }
 
-    fn new_external(target: &str, alt_text: Option<Text>) -> Self {
+    fn new_external(target: &str, caption: Option<Text>) -> Self {
         Self {
             target: HyperLinkTarget::External(target.to_string()),
-            alt_text,
+            caption,
         }
     }
 
-    fn new_internal(target: Anchor, alt_text: Option<Text>) -> Self {
+    fn new_internal(target: Label, caption: Option<Text>) -> Self {
         Self {
             target: HyperLinkTarget::Internal(target),
-            alt_text,
+            caption,
         }
     }
 
@@ -95,11 +96,11 @@ impl HyperLink {
         &self.target
     }
 
-    pub fn has_alt_text(&self) -> bool {
-        self.alt_text.is_some()
+    pub fn has_caption(&self) -> bool {
+        self.caption.is_some()
     }
 
-    pub fn alt_text(&self) -> &Option<Text> {
-        &self.alt_text
+    pub fn caption(&self) -> &Option<Text> {
+        &self.caption
     }
 }
