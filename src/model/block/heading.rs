@@ -14,12 +14,19 @@ use std::convert::TryFrom;
 #[derive(Clone, Debug, PartialEq)]
 #[repr(u8)]
 pub enum HeadingLevel {
+    /// Level 1 heading/section (top-level).
     Section = 1,
+    /// Level 2 heading/section.
     SubSection,
+    /// Level 3 heading/section.
     SubSubSection,
+    /// Level 4 heading/section.
     SubSubSubSection,
+    /// Level 5 heading/section.
     SubSubSubSubSection,
+    /// Level 6 heading/section.
     SubSubSubSubSubSection,
+    /// Level 7 heading/section.
     SubSubSubSubSubSubSection,
 }
 
@@ -80,6 +87,7 @@ block_impls!(Heading);
 has_inline_impls!(Heading);
 
 impl Heading {
+    /// Create a new heading with the given text and level.
     pub fn new(inner: &str, kind: HeadingLevel) -> Self {
         Self {
             label: None,
@@ -88,41 +96,56 @@ impl Heading {
         }
     }
 
+    /// Create a new heading with the given text and level of `HeadingLevel::Section`.
     pub fn section(inner: &str) -> Self {
         Self::new(inner, HeadingLevel::Section)
     }
 
+    /// Create a new heading with the given text and level of `HeadingLevel::SubSection`.
     pub fn sub_section(inner: &str) -> Self {
         Self::new(inner, HeadingLevel::SubSection)
     }
 
+    /// Create a new heading with the given text and level of `HeadingLevel::SubSubSection`.
     pub fn sub_sub_section(inner: &str) -> Self {
         Self::new(inner, HeadingLevel::SubSubSection)
     }
 
+    /// Create a new heading with the given text and level of `HeadingLevel::SubSubSubSection`.
     pub fn sub_sub_sub_section(inner: &str) -> Self {
         Self::new(inner, HeadingLevel::SubSubSubSection)
     }
 
+    /// Create a new heading with the given text and level of `HeadingLevel::SubSubSubSubSection`.
     pub fn sub_sub_sub_sub_section(inner: &str) -> Self {
         Self::new(inner, HeadingLevel::SubSubSubSubSection)
     }
 
+    /// Create a new heading with the given text and level of `HeadingLevel::SubSubSubSubSubSection`.
     pub fn sub_sub_sub_sub_sub_section(inner: &str) -> Self {
         Self::new(inner, HeadingLevel::SubSubSubSubSubSection)
     }
 
+    /// Create a new heading with the given text and level of `HeadingLevel::SubSubSubSubSubSubSection`.
     pub fn sub_sub_sub_sub_sub_sub_section(inner: &str) -> Self {
         Self::new(inner, HeadingLevel::SubSubSubSubSubSubSection)
     }
 
     // --------------------------------------------------------------------------------------------
 
+    /// Return the level of this heading.
     pub fn level(&self) -> &HeadingLevel {
         &self.level
     }
 
+    /// Return the level of this heading as a `u8` value.
     pub fn level_as_u8(&self) -> u8 {
         self.level.clone() as u8
+    }
+
+    /// Set the level of this heading.
+    pub fn set_level(&mut self, level: HeadingLevel) -> &mut Self {
+        self.level = level;
+        self
     }
 }

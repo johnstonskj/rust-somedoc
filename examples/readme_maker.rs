@@ -24,22 +24,22 @@ fn readme_maker(crate_name: &str, repo_owner: &str, repo_name: &str, headline: &
         .add_paragraph(Paragraph::plain_str(headline));
 
     let mut para = Paragraph::default();
-    para.add_image(Image::new(HyperLink::external_with_caption_str(
+    para.add_image(Image::from(HyperLink::external_with_caption_str(
         "https://img.shields.io/badge/license-mit-118811.svg",
         "MIT License",
     )))
-    .add_image(Image::new(HyperLink::external_with_caption_str(
+    .add_image(Image::from(HyperLink::external_with_caption_str(
         "https://img.shields.io/badge/Min%20Rust-1.40-green.svg",
         "Build",
     )))
-    .add_image(Image::new(HyperLink::external_with_caption_str(
+    .add_image(Image::from(HyperLink::external_with_caption_str(
         &format!(
             "https://github.com/{}/{}/workflows/Rust/badge.svg",
             repo_owner, repo_name
         ),
         "Minimum Rust Version",
     )))
-    .add_image(Image::new(HyperLink::external_with_caption_str(
+    .add_image(Image::from(HyperLink::external_with_caption_str(
         &format!(
             "https://github.com/{}/{}/workflows/Security%20audit/badge.svg",
             repo_owner, repo_name

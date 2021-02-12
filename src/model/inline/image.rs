@@ -1,4 +1,4 @@
-use crate::model::block::{BlockContent, ImageBlock};
+use crate::model::block::BlockContent;
 use crate::model::inline::{HyperLink, InlineContent};
 
 // ------------------------------------------------------------------------------------------------
@@ -16,29 +16,17 @@ pub struct Image(HyperLink);
 // ------------------------------------------------------------------------------------------------
 
 impl From<HyperLink> for Image {
-    fn from(v: HyperLink) -> Self {
-        Self::new(v)
+    fn from(link: HyperLink) -> Self {
+        Self(link)
+    }
+}
+
+impl Into<BlockContent> for Image {
+    fn into(self) -> BlockContent {
+        BlockContent::ImageBlock(self.into())
     }
 }
 
 inline_impls!(Image);
 
-impl Into<BlockContent> for Image {
-    fn into(self) -> BlockContent {
-        BlockContent::ImageBlock(ImageBlock::new(self))
-    }
-}
-
-impl Image {
-    pub fn new(v: HyperLink) -> Self {
-        Self(v)
-    }
-
-    pub fn link(&self) -> &HyperLink {
-        &self.0
-    }
-
-    pub fn into_inner(self) -> HyperLink {
-        self.0
-    }
-}
+inner_impl!(Image, HyperLink);

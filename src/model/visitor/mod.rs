@@ -19,8 +19,8 @@ pub fn writer<W: Write>(doc: &Document, w: &mut W) -> crate::error::Result<()> {
 */
 
 use crate::model::block::{
-    BlockContent, Caption, Captioned, Column, DefinitionList, DefinitionListItem, HeadingLevel,
-    Label, List, ListItem, ListKind, ParagraphStyle, Table,
+    Alignment, BlockContent, Caption, Column, DefinitionList, HasAlignment, HasCaption,
+    HeadingLevel, Label, List, ListItem, ListKind, Table,
 };
 use crate::model::document::Metadata;
 use crate::model::inline::{Character, HyperLink, Image, InlineContent, Math, SpanStyle, Text};
@@ -159,12 +159,7 @@ pub trait BlockVisitor {
     }
 
     /// Called at the start of each `Definition` instance `term`, before any inner content.
-    fn start_definition_list_term(&self, label: &Option<Label>) -> crate::error::Result<()> {
-        Ok(())
-    }
-
-    /// Called at the end of each `Definition` instance `term`, after any inner content.
-    fn end_definition_list_term(&self, label: &Option<Label>) -> crate::error::Result<()> {
+    fn start_definition(&self, term: &str, label: &Option<Label>) -> crate::error::Result<()> {
         Ok(())
     }
 
@@ -178,15 +173,20 @@ pub trait BlockVisitor {
         Ok(())
     }
 
+    /// Called at the end of each `Definition` instance `term`, after any inner content.
+    fn end_definition(&self, term: &str, label: &Option<Label>) -> crate::error::Result<()> {
+        Ok(())
+    }
+
     /// Visit each `BlockContent::Formatted` instance.
-    fn formatted(&self, value: &String, label: &Option<Label>) -> crate::error::Result<()> {
+    fn formatted(&self, value: &str, label: &Option<Label>) -> crate::error::Result<()> {
         Ok(())
     }
 
     /// Visit each `BlockContent::CodeBlock` instance.
     fn code_block(
         &self,
-        code: &String,
+        code: &str,
         language: &Option<String>,
         caption: &Option<Caption>,
         label: &Option<Label>,
@@ -197,7 +197,7 @@ pub trait BlockVisitor {
     /// Called at the start of each `BlockContent::Paragraph` instance, before any inner content.
     fn start_paragraph(
         &self,
-        styles: &Vec<ParagraphStyle>,
+        alignment: &Alignment,
         label: &Option<Label>,
     ) -> crate::error::Result<()> {
         Ok(())
@@ -206,7 +206,7 @@ pub trait BlockVisitor {
     /// Called at the end of each `BlockContent::Paragraph` instance, after any inner content.
     fn end_paragraph(
         &self,
-        styles: &Vec<ParagraphStyle>,
+        alignment: &Alignment,
         label: &Option<Label>,
     ) -> crate::error::Result<()> {
         Ok(())
@@ -355,12 +355,12 @@ pub trait InlineVisitor {
     }
 
     /// Called at the start of each `InlineContent::Span` instance, before any inner content.
-    fn start_span(&self, styles: &Vec<SpanStyle>) -> crate::error::Result<()> {
+    fn start_span(&self, styles: &[SpanStyle]) -> crate::error::Result<()> {
         Ok(())
     }
 
     /// Called at the end of each `InlineContent::Span` instance, after any inner content.
-    fn end_span(&self, styles: &Vec<SpanStyle>) -> crate::error::Result<()> {
+    fn end_span(&self, styles: &[SpanStyle]) -> crate::error::Result<()> {
         Ok(())
     }
 }
@@ -404,7 +404,7 @@ pub fn walk_document(doc: &Document, visitor: &impl DocumentVisitor) -> crate::e
 // ------------------------------------------------------------------------------------------------
 
 fn walk_all_blocks(
-    blocks: &Vec<BlockContent>,
+    blocks: &[BlockContent],
     visitor: &dyn BlockVisitor,
 ) -> crate::error::Result<()> {
     for block in blocks {
@@ -433,11 +433,11 @@ fn walk_block(block: &BlockContent, visitor: &dyn BlockVisitor) -> crate::error:
             visitor.code_block(v.code(), v.language(), v.caption(), v.label())?
         }
         BlockContent::Paragraph(v) => {
-            visitor.start_paragraph(v.styles(), v.label())?;
+            visitor.start_paragraph(v.alignment(), v.label())?;
             if let Some(inline_visitor) = visitor.inline_visitor() {
                 walk_inline(v.inner(), inline_visitor)?;
             }
-            visitor.end_paragraph(v.styles(), v.label())?;
+            visitor.end_paragraph(v.alignment(), v.label())?;
         }
         BlockContent::Quote(v) => {
             visitor.start_quote(v.label())?;
@@ -479,22 +479,13 @@ fn walk_definition_list(
     visitor: &dyn BlockVisitor,
 ) -> crate::error::Result<()> {
     visitor.start_definition_list(list.label())?;
-    for inner in list.inner() {
-        match inner {
-            DefinitionListItem::List(v) => {
-                walk_definition_list(&v, visitor)?;
-            }
-            DefinitionListItem::Item(v) => {
-                if let Some(inline_visitor) = visitor.inline_visitor() {
-                    visitor.start_definition_list_term(v.label())?;
-                    walk_inline(v.term().inner(), inline_visitor)?;
-                    visitor.end_definition_list_term(v.label())?;
-
-                    visitor.start_definition_list_text()?;
-                    walk_inline(v.text().inner(), inline_visitor)?;
-                    visitor.end_definition_list_text()?;
-                }
-            }
+    for v in list.inner() {
+        if let Some(inline_visitor) = visitor.inline_visitor() {
+            visitor.start_definition(v.term(), v.label())?;
+            visitor.start_definition_list_text()?;
+            walk_inline(v.text().inner(), inline_visitor)?;
+            visitor.end_definition_list_text()?;
+            visitor.end_definition(v.term(), v.label())?;
         }
     }
     visitor.end_definition_list(list.label())
@@ -526,10 +517,7 @@ fn walk_table(table: &Table, visitor: &dyn TableVisitor) -> crate::error::Result
     visitor.end_table(table.caption(), table.label())
 }
 
-fn walk_inline(
-    inline: &Vec<InlineContent>,
-    visitor: &dyn InlineVisitor,
-) -> crate::error::Result<()> {
+fn walk_inline(inline: &[InlineContent], visitor: &dyn InlineVisitor) -> crate::error::Result<()> {
     for inline in inline {
         match inline {
             InlineContent::HyperLink(v) => visitor.link(v)?,

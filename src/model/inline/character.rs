@@ -47,20 +47,6 @@ impl FromStr for Emoji {
     type Err = error::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::new(s)
-    }
-}
-
-impl Deref for Emoji {
-    type Target = str;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl Emoji {
-    pub fn new(s: &str) -> error::Result<Self> {
         if !s.is_empty() {
             if EMOJI_RE.is_match(s) {
                 if s.starts_with(':') && s.ends_with(':') {
@@ -75,15 +61,17 @@ impl Emoji {
             Err(error::ErrorKind::MustNotBeEmpty.into())
         }
     }
+}
 
-    pub fn inner(&self) -> &String {
+impl Deref for Emoji {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
         &self.0
     }
-
-    pub fn into_inner(self) -> String {
-        self.0
-    }
 }
+
+inner_impl!(Emoji, String);
 
 // ------------------------------------------------------------------------------------------------
 

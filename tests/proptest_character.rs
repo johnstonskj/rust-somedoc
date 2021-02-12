@@ -8,20 +8,17 @@ use std::str::FromStr;
 
 #[test]
 fn test_emoji_reject_empty() {
-    let result = Emoji::new("");
-    assert!(result.is_err());
-
     let result = Emoji::from_str("");
     assert!(result.is_err());
 }
 
 #[test]
 fn test_emoji_reject_unbalanced_colons() {
-    let result = Emoji::new(":hello");
+    let result = Emoji::from_str(":hello");
     println!("{:?}", result);
     assert!(result.is_err());
 
-    let result = Emoji::new("hello:");
+    let result = Emoji::from_str("hello:");
     assert!(result.is_err());
 }
 

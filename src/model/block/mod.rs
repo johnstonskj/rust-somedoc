@@ -3,6 +3,8 @@ This module is the root of a set of types that represent *block* content; that i
 stands on it's own such as a complete paragraph.
 */
 
+// TODO: potentially add TOC, glossary, etc.
+
 use crate::model::inline::Image;
 use crate::model::HasInnerContent;
 
@@ -40,8 +42,6 @@ pub enum BlockContent {
     /// A visual break between themes.
     ThematicBreak,
 }
-
-// TODO: potentially add TOC, glossary, ettc.
 
 ///
 /// This trait is implemented by any type that contains, as content, a list of block content instances.
@@ -209,8 +209,12 @@ pub trait HasBlockContent: Default + HasInnerContent<BlockContent> {
 // ------------------------------------------------------------------------------------------------
 
 #[doc(hidden)]
+pub mod align;
+pub use align::{Alignment, HasAlignment};
+
+#[doc(hidden)]
 pub mod caption;
-pub use caption::{Caption, Captioned};
+pub use caption::{Caption, HasCaption};
 
 #[doc(hidden)]
 pub mod code;
@@ -230,7 +234,7 @@ pub use list::{Item, List, ListItem, ListKind};
 
 #[doc(hidden)]
 pub mod definition_list;
-pub use definition_list::{Definition, DefinitionList, DefinitionListItem, DefinitionPart};
+pub use definition_list::{Definition, DefinitionList, DefinitionPart};
 
 #[doc(hidden)]
 pub mod image;
@@ -242,7 +246,7 @@ pub use math::MathBlock;
 
 #[doc(hidden)]
 pub mod paragraph;
-pub use paragraph::{Alignment, Paragraph, ParagraphStyle};
+pub use paragraph::Paragraph;
 
 #[doc(hidden)]
 pub mod quote;

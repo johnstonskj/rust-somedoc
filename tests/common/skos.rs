@@ -1,6 +1,6 @@
 use somedoc::model::block::Label;
 use somedoc::model::block::{
-    Captioned, Cell, CodeBlock, Column, Formatted, HasBlockContent, Heading, List, Paragraph,
+    Cell, CodeBlock, Column, Formatted, HasBlockContent, HasCaption, Heading, List, Paragraph,
     Quote, Row, Table,
 };
 use somedoc::model::document::Document;
@@ -79,12 +79,12 @@ pub fn document() -> Document {
 
     doc.add_heading(Heading::sub_section("Appendix - RDF"));
 
-    doc.add_code_block(CodeBlock::new_with_language(
+    doc.add_code_block(CodeBlock::with_language(
         "@prefix foo: <...>\nfoo:bar foo:baz 12.",
         "turtle",
     ));
 
-    doc.add_formatted(Formatted::new("@prefix foo: <...>\nfoo:bar foo:baz 12."));
+    doc.add_formatted(Formatted::from("@prefix foo: <...>\nfoo:bar foo:baz 12."));
 
     doc
 }

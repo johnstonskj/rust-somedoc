@@ -1,5 +1,5 @@
 use proptest::prelude::*;
-use somedoc::model::block::Label;
+use somedoc::model::block::{HasCaption, Label};
 use somedoc::model::inline::{HyperLink, HyperLinkTarget};
 use std::str::FromStr;
 

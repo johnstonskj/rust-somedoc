@@ -10,7 +10,7 @@ A very simple document model and markup generator.
 ![Audit](https://github.com/johnstonskj/rust-somedoc/workflows/Security%20audit/badge.svg)
 [![GitHub stars](https://img.shields.io/github/stars/johnstonskj/rust-somedoc.svg)](https://github.com/johnstonskj/rust-somedoc/stargazers)
 
-==========
+-----
 
 ## Model
 
@@ -103,10 +103,28 @@ let doc_str = write_document_to_string(&doc, OutputFormat::XWiki).unwrap();
 println!("{}", doc_str);
 ```
 
-==========
+-----
 
 ## Changes
 
+**Version 0.2.2**
+
+* Added: mostly complete API/library documentation.
+* Added: `inner_impl` macro for consistent use of `inner` and `into_inner` methods.
+  * Refactor: this required renaming `link` to `inner` on `Image`.
+* Fixed: Duplicate `From` and `from` implementations on inline content.
+* Refactor: renamed `label` to `text` on `model::block::table::Column`.
+* Refactor: renamed `Captioned` trait to `HasCaption` for consistency.
+* Refactor: replaced `Text` with `Caption` as type for `HyperLink` caption; implemented 
+  `HasCaption` also.
+* Refactor: made definition lists only a single level, and the term is simply a `String`.
+* Refactor: removed constructors that only took a single value and use `From<>` instead in `Caption`, `Code`,
+  `Formatted`, `Heading`, `Image`.
+* Refactor: renaming `new_with_` functions to simply `with_`.
+* Refactor: removed `ParagraphStyle`, made `alignment` a single value property on `Paragraph`. 
+  * Moved the Alignment enum to its own module shared with `Paragraph` and `table::Column`.
+  * Added new `HasAlignment` trait (and macro) for consistency between paragraph and column.
+* Clean-up: fixed all Clippy warnings.  
 
 **Version 0.2.1**
 
@@ -185,10 +203,6 @@ changes.
 
 ## TODO
 
-* Investigate new writers,
-  * LaTeX
-  * RTF,
 * Investigate math support in some form.
 * Investigate float hints.
 * Investigate glossary, acronym, and bib support.
-* Add macros for all document generation.

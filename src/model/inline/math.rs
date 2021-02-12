@@ -25,8 +25,8 @@ impl Default for Math {
 impl FromStr for Math {
     type Err = error::Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::new(s)
+    fn from_str(inner: &str) -> Result<Self, Self::Err> {
+        Ok(Self(inner.to_string()))
     }
 }
 
@@ -38,23 +38,7 @@ impl Deref for Math {
     }
 }
 
-impl Math {
-    ///
-    /// Construct a new Math instance from the provided LaTeX string; this will return an error
-    /// if the LaTeX is invalid.
-    ///
-    pub fn new(s: &str) -> error::Result<Self> {
-        Ok(Self(s.to_string()))
-    }
-
-    pub fn inner(&self) -> &String {
-        &self.0
-    }
-
-    pub fn into_inner(self) -> String {
-        self.0
-    }
-}
+inner_impl!(Math, String);
 
 // ------------------------------------------------------------------------------------------------
 

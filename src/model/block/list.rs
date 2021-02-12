@@ -1,5 +1,6 @@
 use crate::error;
 use crate::model::block::{BlockContent, Label};
+use crate::model::inline::Text;
 use crate::model::inline::{HasInlineContent, InlineContent};
 use crate::model::{block::HasLabel, HasInnerContent};
 
@@ -12,7 +13,9 @@ use crate::model::{block::HasLabel, HasInnerContent};
 ///
 #[derive(Clone, Debug, PartialEq)]
 pub enum ListKind {
+    /// An ordered/numbered item list.
     Ordered,
+    /// An unordered/bulleted item list.
     Unordered,
 }
 
@@ -70,6 +73,7 @@ label_impl!(List);
 block_impls!(List);
 
 impl List {
+    /// Create a new list of the provided `kind`.
     pub fn new(kind: ListKind) -> Self {
         Self {
             label: None,
@@ -78,35 +82,46 @@ impl List {
         }
     }
 
+    /// Create a new ordered/numbered item list.
     pub fn ordered() -> Self {
         Self::new(ListKind::Ordered)
     }
 
+    /// Create a new unordered/bulleted item list.
     pub fn unordered() -> Self {
         Self::new(ListKind::Unordered)
     }
 
     // --------------------------------------------------------------------------------------------
 
+    /// Returns true if this list contains any items or sub-lists.
     pub fn has_inner(&self) -> bool {
         !self.inner.is_empty()
     }
 
+    /// Return the vector of list items or sub-lists.
     pub fn inner(&self) -> &Vec<ListItem> {
         &self.inner
     }
 
     // --------------------------------------------------------------------------------------------
 
-    pub fn add_inner(&mut self, item: ListItem) -> &mut Self {
+    fn add_inner(&mut self, item: ListItem) -> &mut Self {
         self.inner.push(item);
         self
     }
 
+    /// Add a new item to this list.
     pub fn add_item(&mut self, item: Item) -> &mut Self {
         self.add_inner(ListItem::Item(item))
     }
 
+    /// Add a new item to this list.
+    pub fn add_item_str(&mut self, item: &str) -> &mut Self {
+        self.add_item_from(Text::from(item).into())
+    }
+
+    /// Add a new item to this list from the provided content.
     pub fn add_item_from(&mut self, item: InlineContent) -> &mut Self {
         self.add_inner(ListItem::Item(item.into()))
     }
@@ -117,20 +132,17 @@ impl List {
 
     // --------------------------------------------------------------------------------------------
 
+    /// Return `true` if this is an ordered/numbered item list, else `false`.
     pub fn is_ordered(&self) -> bool {
-        match self.kind {
-            ListKind::Ordered => true,
-            _ => false,
-        }
+        matches!(self.kind, ListKind::Ordered)
     }
 
+    /// Return `true` if this is an unordered/bulleted item list, else `false`.
     pub fn is_unordered(&self) -> bool {
-        match self.kind {
-            ListKind::Unordered => true,
-            _ => false,
-        }
+        matches!(self.kind, ListKind::Unordered)
     }
 
+    /// Return the kind of this list.
     pub fn kind(&self) -> &ListKind {
         &self.kind
     }
@@ -166,17 +178,13 @@ impl From<Item> for ListItem {
 }
 
 impl ListItem {
+    /// Is this list item a sub-list.
     pub fn is_sub_list(&self) -> bool {
-        match &self {
-            Self::List(_) => true,
-            _ => false,
-        }
+        matches!(&self, Self::List(_))
     }
 
+    /// Is this list item a leaf item.
     pub fn is_item(&self) -> bool {
-        match &self {
-            Self::Item(_) => true,
-            _ => false,
-        }
+        matches!(&self, Self::Item(_))
     }
 }

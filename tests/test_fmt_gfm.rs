@@ -38,7 +38,7 @@ fn test_skos() {
 > 
 
 |Label text|Language|
-|-----|-----|
+|:----|:----|
 |Clothing shapes, patterns, and details|**en**|
 
 

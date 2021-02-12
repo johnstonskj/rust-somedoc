@@ -4,6 +4,23 @@
 
 #[doc(hidden)]
 #[macro_export]
+macro_rules! alignment_impl {
+    ($name:ident) => {
+        impl HasAlignment for $name {
+            fn alignment(&self) -> &Alignment {
+                &self.alignment
+            }
+
+            fn set_alignment(&mut self, alignment: Alignment) -> &mut Self {
+                self.alignment = alignment;
+                self
+            }
+        }
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
 macro_rules! label_impl {
     ($name:ident) => {
         impl HasLabel for $name {
@@ -15,12 +32,14 @@ macro_rules! label_impl {
                 &self.label
             }
 
-            fn set_label(&mut self, label: Label) {
-                self.label = Some(label)
+            fn set_label(&mut self, label: Label) -> &mut Self {
+                self.label = Some(label);
+                self
             }
 
-            fn unset_label(&mut self) {
-                self.label = None
+            fn unset_label(&mut self) -> &mut Self {
+                self.label = None;
+                self
             }
         }
     };
@@ -160,17 +179,50 @@ macro_rules! has_styles_impls {
 #[macro_export]
 macro_rules! has_captioned_impls {
     ($struct_name:ty) => {
-        impl Captioned for $struct_name {
+        impl HasCaption for $struct_name {
             fn caption(&self) -> &Option<Caption> {
                 &self.caption
             }
 
-            fn set_caption(&mut self, caption: Caption) {
+            fn set_caption(&mut self, caption: Caption) -> &mut Self {
                 self.caption = Some(caption);
+                self
             }
 
-            fn unset_caption(&mut self) {
+            fn unset_caption(&mut self) -> &mut Self {
                 self.caption = None;
+                self
+            }
+        }
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! inner_impl {
+    ($outer_name:ty, $inner_name:ty) => {
+        impl $outer_name {
+            /// Return a reference to the inner value.
+            pub fn inner(&self) -> &$inner_name {
+                &self.0
+            }
+
+            /// Return the inner value, consuming the outer one.
+            pub fn into_inner(self) -> $inner_name {
+                self.0
+            }
+        }
+    };
+    ($outer_name:ty, $inner_name:ty, $field_name:ident) => {
+        impl $outer_name {
+            /// Return a reference to the inner value.
+            pub fn inner(&self) -> &$inner_name {
+                &self.$field_name
+            }
+
+            /// Return the inner value, consuming the outer one.
+            pub fn into_inner(self) -> $inner_name {
+                self.$field_name
             }
         }
     };

@@ -1,5 +1,5 @@
-use crate::model::block::Label;
-use crate::model::inline::{InlineContent, Text};
+use crate::model::block::{Caption, HasCaption, Label};
+use crate::model::inline::InlineContent;
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
@@ -10,7 +10,9 @@ use crate::model::inline::{InlineContent, Text};
 ///
 #[derive(Clone, Debug, PartialEq)]
 pub enum HyperLinkTarget {
+    /// The target is an external reference, i.e. URL.
     External(String),
+    /// The target is an internal reference, a `Label` on some element.
     Internal(Label),
 }
 
@@ -20,54 +22,71 @@ pub enum HyperLinkTarget {
 #[derive(Clone, Debug)]
 pub struct HyperLink {
     target: HyperLinkTarget,
-    caption: Option<Text>,
+    caption: Option<Caption>,
 }
 
 // ------------------------------------------------------------------------------------------------
 // Implementations
 // ------------------------------------------------------------------------------------------------
 
-inline_impls!(HyperLink);
-
 impl From<Label> for HyperLink {
-    fn from(a: Label) -> Self {
-        Self::internal(a)
+    fn from(v: Label) -> Self {
+        Self::internal(v)
     }
 }
 
+impl From<HyperLinkTarget> for HyperLink {
+    fn from(v: HyperLinkTarget) -> Self {
+        Self {
+            target: v,
+            caption: None,
+        }
+    }
+}
+
+inline_impls!(HyperLink);
+
+has_captioned_impls!(HyperLink);
+
 impl HyperLink {
+    /// Create a new `Link` with `target` an external location.
     pub fn external(target: &str) -> Self {
         Self::new_external(target, None)
     }
 
-    pub fn external_with_caption(target: &str, caption: Text) -> Self {
+    /// Create a new `Link` with `target` an external location, and associated caption.
+    pub fn external_with_caption(target: &str, caption: Caption) -> Self {
         Self::new_external(target, Some(caption))
     }
 
+    /// Create a new `Link` with `target` an external location, and associated caption string.
     pub fn external_with_caption_str(target: &str, caption: &str) -> Self {
         Self::new_external(target, Some(caption.into()))
     }
 
+    /// Create a new `Link` with `target` an internal location.
     pub fn internal(target: Label) -> Self {
         Self::new_internal(target, None)
     }
 
-    pub fn internal_with_caption(target: Label, caption: Text) -> Self {
+    /// Create a new `Link` with `target` an internal location, and associated caption.
+    pub fn internal_with_caption(target: Label, caption: Caption) -> Self {
         Self::new_internal(target, Some(caption))
     }
 
+    /// Create a new `Link` with `target` an internal location, and associated caption string.
     pub fn internal_with_caption_str(target: Label, caption: &str) -> Self {
         Self::new_internal(target, Some(caption.into()))
     }
 
-    fn new_external(target: &str, caption: Option<Text>) -> Self {
+    fn new_external(target: &str, caption: Option<Caption>) -> Self {
         Self {
             target: HyperLinkTarget::External(target.to_string()),
             caption,
         }
     }
 
-    fn new_internal(target: Label, caption: Option<Text>) -> Self {
+    fn new_internal(target: Label, caption: Option<Caption>) -> Self {
         Self {
             target: HyperLinkTarget::Internal(target),
             caption,
@@ -76,31 +95,20 @@ impl HyperLink {
 
     // --------------------------------------------------------------------------------------------
 
+    /// Is the target of this link internal?
     pub fn is_internal(&self) -> bool {
-        match &self.target {
-            HyperLinkTarget::Internal(_) => true,
-            _ => false,
-        }
+        matches!(&self.target, HyperLinkTarget::Internal(_))
     }
 
+    /// Is the target of this link external?
     pub fn is_external(&self) -> bool {
-        match &self.target {
-            HyperLinkTarget::External(_) => true,
-            _ => false,
-        }
+        matches!(&self.target, HyperLinkTarget::External(_))
     }
 
     // --------------------------------------------------------------------------------------------
 
+    /// Return the target of this link.
     pub fn target(&self) -> &HyperLinkTarget {
         &self.target
-    }
-
-    pub fn has_caption(&self) -> bool {
-        self.caption.is_some()
-    }
-
-    pub fn caption(&self) -> &Option<Text> {
-        &self.caption
     }
 }

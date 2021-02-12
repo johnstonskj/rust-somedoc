@@ -106,20 +106,12 @@ impl Deref for Text {
 
 inline_impls!(Text);
 
+inner_impl!(Text, String);
+
 impl Text {
     /// Create a new Text instance from the string.
     pub fn new(s: &str) -> Self {
         Self(s.to_string())
-    }
-
-    /// Return a reference to the inner string.
-    pub fn inner(&self) -> &String {
-        &self.0
-    }
-
-    /// Return the inner string.
-    pub fn into_inner(self) -> String {
-        self.0
     }
 }
 
@@ -141,33 +133,24 @@ has_inline_impls!(Span);
 has_styles_impls!(Span, SpanStyle);
 
 impl Span {
-    /// Create a new span, with no styling, that includes a `Text` instance.
-    pub fn new(inner: &str) -> Self {
-        Self::new_with_style(inner, Default::default())
-    }
-
     /// Create a new span, with the provided style, that includes a `Text` instance.
-    pub fn new_with_style(inner: &str, style: SpanStyle) -> Self {
+    pub fn with_style(inner: &str, style: SpanStyle) -> Self {
         Self {
             inner: vec![Text::from(inner).into()],
             styles: vec![style],
         }
     }
 
-    /// Create a new span, with no styling, that includes a `InlineContent` instance.
-    pub fn new_inner(inner: InlineContent) -> Self {
-        Self::new_inner_with_style(inner, Default::default())
-    }
-
     /// Create a new span, with the provided style, that includes a `InlineContent` instance.
-    pub fn new_inner_with_style(inner: InlineContent, style: SpanStyle) -> Self {
+    pub fn inner_with_style(inner: InlineContent, style: SpanStyle) -> Self {
         Self {
             inner: vec![inner],
             styles: vec![style],
         }
     }
 
+    /// Create a new span containing simply a space character.
     pub fn space() -> Self {
-        Self::new_inner(Character::Space.into())
+        Self::from(InlineContent::from(Character::Space.into()))
     }
 }

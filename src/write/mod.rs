@@ -8,6 +8,8 @@ then be used in [`write_document`](fn.write_document.html) and
 
 # Example
 
+The following uses the `write_document_to_string` convenience function.
+
 ```rust
 # use somedoc::model::Document;
 use somedoc::write::{OutputFormat, write_document_to_string};
@@ -21,26 +23,28 @@ println!("{}", doc_str);
 
 # Writer Implementation
 
-Each writer module provides a single function that is called by `write_document` and is passed the
-document and the `Write` implementation. While the following types are **not** used in this module
-they are useful in understanding the two writer types.
+Each of the supported output formats implements *at least* the `Writer` and possibly the
+`ConfigurableWriter` trait. These provide common functions for construction of the writer struct
+and the `write_document` method. The following example constructs two separate writers and emits
+the same document into both.
 
 ```rust
-use std::io::Write;
-use somedoc::model::document::Document;
+# use somedoc::model::Document;
+use somedoc::write::{ConfigurableWriter, Writer};
+use somedoc::write::markdown::{MarkdownFlavor, MarkdownWriter};
+use somedoc::write::latex::LatexWriter;
 
-type WriterFn<W: Write> = dyn Fn(&Document, &mut W) -> std::io::Result<()>;
+# fn make_some_document() -> Document { Document::default() }
+let doc = make_some_document();
 
-type FlavoredWriterFn<E: Default, W: Write> =
-        dyn Fn(&Document, E, &mut W) -> std::io::Result<()>;
+let mut out = std::io::stdout();
+
+let writer = MarkdownWriter::new_with(&mut out, MarkdownFlavor::CommonMark);
+assert!(writer.write_document(&doc).is_ok());
+
+let writer = LatexWriter::new(&mut out);
+assert!(writer.write_document(&doc).is_ok());
 ```
-
-The function type `WriterFn` is the primary case where the document and writer are passed in.
-However, some formats such as Markdown have multiple *flavors* that the caller may wish to select
-from. The secont type above, `FlavoredWriterFn` takes an additional parameter that denotes the
-flavor. In the type [`OutputFormat`](enum.OutputFormat.html) you can see that the `Markdown`
-variant includes the flavor, and this will be the concrete value for `E` when calling the
-markdown implementation of `FlavoredWriterFn`.
 
 */
 
@@ -50,7 +54,9 @@ use std::str::FromStr;
 
 use crate::error;
 use crate::model::Document;
-use crate::write::markdown::MarkdownFlavor;
+use crate::write::html::HtmlWriter;
+use crate::write::latex::LatexWriter;
+use crate::write::markdown::{MarkdownFlavor, MarkdownWriter};
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
@@ -80,14 +86,19 @@ pub enum OutputFormat {
 ///
 pub trait Writer<'a, W: Write> {
     /// Create a new writer using the write implementation provided.
-    fn new(w: &'a mut W) -> Self;
+    fn new(w: &'a mut W) -> Self
+    where
+        Self: Sized;
+
+    /// Format and write the provided document using the `Write` instance given during construction.
+    fn write_document(&self, doc: &Document) -> crate::error::Result<()>;
 }
 
 ///
 /// This trait can be implemented by a serializer to provide a common instantiation method when
 /// configuration may be passed to the new instance.
 ///
-pub trait ConfigurableWriter<'a, W: Write, T: Default> {
+pub trait ConfigurableWriter<'a, W: Write, T: Default>: Writer<'a, W> {
     /// Create a new writer using the write implementation provided, and the configuration value(s).
     fn new_with(w: &'a mut W, config: T) -> Self;
 }
@@ -98,7 +109,7 @@ pub trait ConfigurableWriter<'a, W: Write, T: Default> {
 
 ///
 /// Write the provided document `doc`, in the format described by `format`, into the write
-/// implementation `w`.
+/// implementation `w`. This is simply a convenience function
 ///
 pub fn write_document<W: Write>(
     doc: &Document,
@@ -107,11 +118,20 @@ pub fn write_document<W: Write>(
 ) -> crate::error::Result<()> {
     match format {
         #[cfg(feature = "fmt_markdown")]
-        OutputFormat::Markdown(flavor) => markdown::writer::<W>(doc, flavor, w),
+        OutputFormat::Markdown(flavor) => {
+            let writer = MarkdownWriter::new_with(w, flavor);
+            writer.write_document(doc)
+        }
         #[cfg(feature = "fmt_html")]
-        OutputFormat::Html => html::writer(doc, w),
+        OutputFormat::Html => {
+            let writer = HtmlWriter::new(w);
+            writer.write_document(doc)
+        }
         #[cfg(feature = "fmt_latex")]
-        OutputFormat::Latex => latex::writer(doc, w),
+        OutputFormat::Latex => {
+            let writer = LatexWriter::new(w);
+            writer.write_document(doc)
+        }
     }
 }
 

@@ -17,7 +17,7 @@ println!("{}", doc_str);
 
 */
 
-use crate::model::block::{Caption, Column, HeadingLevel, Label, ListKind, ParagraphStyle};
+use crate::model::block::{Alignment, Caption, Column, HasCaption, HeadingLevel, Label, ListKind};
 use crate::model::document::Metadata;
 use crate::model::inline::{Character, HyperLink, HyperLinkTarget, Image, Math, SpanStyle, Text};
 use crate::model::visitor::{
@@ -104,6 +104,11 @@ impl<'a, W: Write> Writer<'a, W> for HtmlWriter<'a, W> {
             list_level: RefCell::from(0),
             w: RefCell::from(w),
         }
+    }
+
+    fn write_document(&self, doc: &Document) -> crate::error::Result<()> {
+        walk_document(doc, self)?;
+        Ok(())
     }
 }
 
@@ -515,12 +520,11 @@ impl<'a, W: Write> BlockVisitor for HtmlWriter<'a, W> {
         self.end_tag(&mut w, "dl", true)
     }
 
-    fn start_definition_list_term(&self, _label: &Option<Label>) -> crate::error::Result<()> {
-        self.start_tag(&mut self.w.borrow_mut(), "dt", true)
-    }
-
-    fn end_definition_list_term(&self, _label: &Option<Label>) -> crate::error::Result<()> {
-        self.end_tag(&mut self.w.borrow_mut(), "dt", true)
+    fn start_definition(&self, term: &str, _label: &Option<Label>) -> crate::error::Result<()> {
+        let mut w = self.w.borrow_mut();
+        self.start_tag(&mut w, "dt", true)?;
+        self.write(&mut w, term)?;
+        self.end_tag(&mut w, "dt", true)
     }
 
     fn start_definition_list_text(&self) -> crate::error::Result<()> {
@@ -531,7 +535,7 @@ impl<'a, W: Write> BlockVisitor for HtmlWriter<'a, W> {
         self.end_tag(&mut self.w.borrow_mut(), "dd", true)
     }
 
-    fn formatted(&self, value: &String, _label: &Option<Label>) -> crate::error::Result<()> {
+    fn formatted(&self, value: &str, _label: &Option<Label>) -> crate::error::Result<()> {
         let mut w = self.w.borrow_mut();
         self.start_tag(&mut w, "pre", true)?;
         self.write(&mut w, &format!("{}\n", value))?;
@@ -541,7 +545,7 @@ impl<'a, W: Write> BlockVisitor for HtmlWriter<'a, W> {
 
     fn code_block(
         &self,
-        code: &String,
+        code: &str,
         language: &Option<String>,
         _caption: &Option<Caption>,
         _label: &Option<Label>,
@@ -551,7 +555,7 @@ impl<'a, W: Write> BlockVisitor for HtmlWriter<'a, W> {
         self.indent(&mut w)?;
         self.start_line(&mut w)?;
         if let Some(language) = language {
-            self.start_tag_with(&mut w, "code", &vec![("class", language.as_str())], false)?;
+            self.start_tag_with(&mut w, "code", &[("class", language.as_str())], false)?;
         } else {
             self.start_tag(&mut w, "code", false)?;
         }
@@ -567,7 +571,7 @@ impl<'a, W: Write> BlockVisitor for HtmlWriter<'a, W> {
 
     fn start_paragraph(
         &self,
-        _styles: &Vec<ParagraphStyle>,
+        _alignment: &Alignment,
         _label: &Option<Label>,
     ) -> crate::error::Result<()> {
         // TODO: complete the addition of styles.
@@ -577,7 +581,7 @@ impl<'a, W: Write> BlockVisitor for HtmlWriter<'a, W> {
 
     fn end_paragraph(
         &self,
-        _styles: &Vec<ParagraphStyle>,
+        _alignment: &Alignment,
         _label: &Option<Label>,
     ) -> crate::error::Result<()> {
         // TODO: complete the addition of styles.
@@ -643,7 +647,7 @@ impl<'a, W: Write> TableVisitor for HtmlWriter<'a, W> {
     fn table_header_cell(&self, column_cell: &Column, _: usize) -> crate::error::Result<()> {
         self.write(
             &mut self.w.borrow_mut(),
-            &format!("<th>{}</th>", column_cell.label()),
+            &format!("<th>{}</th>", column_cell.text()),
         )
     }
 
@@ -710,11 +714,11 @@ impl<'a, W: Write> InlineVisitor for HtmlWriter<'a, W> {
     }
 
     fn image(&self, value: &Image) -> crate::error::Result<()> {
-        let src = match value.link().target() {
+        let src = match value.inner().target() {
             HyperLinkTarget::External(v) => v.to_string(),
             HyperLinkTarget::Internal(v) => format!("#{}", v),
         };
-        let attributes: Vec<(&str, &str)> = if let Some(alt_text) = value.link().caption() {
+        let attributes: Vec<(&str, &str)> = if let Some(alt_text) = value.inner().caption() {
             vec![("src", &src), ("alt", alt_text.inner())]
         } else {
             vec![("src", &src)]
@@ -742,18 +746,15 @@ impl<'a, W: Write> InlineVisitor for HtmlWriter<'a, W> {
     fn character(&self, value: &Character) -> crate::error::Result<()> {
         self.write(
             &mut self.w.borrow_mut(),
-            &format!(
-                "{}",
-                match value {
-                    Character::Space => "&#32;".to_string(),
-                    Character::NonBreakSpace => "&nbsp;".to_string(),
-                    Character::Hyphen => "&dash;".to_string(),
-                    Character::EmDash => "&mdash;".to_string(),
-                    Character::EnDash => "&ndash;".to_string(),
-                    Character::Emoji(v) => v.inner().to_string(),
-                    Character::Other(v) => v.to_string(),
-                }
-            ),
+            &match value {
+                Character::Space => "&#32;".to_string(),
+                Character::NonBreakSpace => "&nbsp;".to_string(),
+                Character::Hyphen => "&dash;".to_string(),
+                Character::EmDash => "&mdash;".to_string(),
+                Character::EnDash => "&ndash;".to_string(),
+                Character::Emoji(v) => v.inner().to_string(),
+                Character::Other(v) => v.to_string(),
+            },
         )
     }
 
@@ -762,14 +763,14 @@ impl<'a, W: Write> InlineVisitor for HtmlWriter<'a, W> {
         Ok(())
     }
 
-    fn start_span(&self, styles: &Vec<SpanStyle>) -> crate::error::Result<()> {
+    fn start_span(&self, styles: &[SpanStyle]) -> crate::error::Result<()> {
         for tag in self.span_tags(styles) {
             self.start_tag(&mut self.w.borrow_mut(), &tag, false)?;
         }
         Ok(())
     }
 
-    fn end_span(&self, styles: &Vec<SpanStyle>) -> crate::error::Result<()> {
+    fn end_span(&self, styles: &[SpanStyle]) -> crate::error::Result<()> {
         for tag in self.span_tags(styles).iter().rev() {
             self.end_tag(&mut self.w.borrow_mut(), &tag, false)?;
         }
@@ -782,7 +783,7 @@ impl<'a, W: Write> HtmlWriter<'a, W> {
         HEADER_ID_REGEX.replace_all(header, "_").to_string()
     }
 
-    fn span_tags(&self, styles: &Vec<SpanStyle>) -> Vec<String> {
+    fn span_tags(&self, styles: &[SpanStyle]) -> Vec<String> {
         let mut tags: Vec<String> = Default::default();
         for style in styles {
             match style {

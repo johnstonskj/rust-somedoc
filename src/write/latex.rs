@@ -16,8 +16,9 @@ println!("{}", doc_str);
 ```
 */
 
-use crate::model::block::table::Alignment;
-use crate::model::block::{Caption, Column, HeadingLevel, Label, ListKind, ParagraphStyle};
+use crate::model::block::{
+    Alignment, Caption, Column, HasAlignment, HasCaption, HeadingLevel, Label, ListKind,
+};
 use crate::model::document::Metadata;
 use crate::model::inline::text::Size;
 use crate::model::inline::{Character, HyperLink, HyperLinkTarget, Image, Math, SpanStyle, Text};
@@ -237,7 +238,7 @@ impl PreambleItem {
 impl Default for LatexPreamble {
     fn default() -> Self {
         Self(vec![
-            PreambleItem::class_with("article", &vec!["twoside", "12pt", "lettersize"]),
+            PreambleItem::class_with("article", &["twoside", "12pt", "lettersize"]),
             PreambleItem::package("amsmath"),
             PreambleItem::package("csquotes"),
             PreambleItem::package("graphicx"),
@@ -274,6 +275,11 @@ impl LatexPreamble {
 impl<'a, W: Write> Writer<'a, W> for LatexWriter<'a, W> {
     fn new(w: &'a mut W) -> Self {
         Self::new_with(w, Default::default())
+    }
+
+    fn write_document(&self, doc: &Document) -> crate::error::Result<()> {
+        walk_document(doc, self)?;
+        Ok(())
     }
 }
 
@@ -414,7 +420,7 @@ impl<'a, W: Write> LatexWriter<'a, W> {
                     let command = if *renew { "renewcommand" } else { "newcommand" };
                     let name = format!("\\{}", name);
                     if *arg_count > 0 {
-                        self.command_with(command, &name, &vec![arg_count.to_string().as_str()])?;
+                        self.command_with(command, &name, &[arg_count.to_string().as_str()])?;
                     } else {
                         self.command(command, &name)?;
                     }
@@ -436,7 +442,7 @@ impl<'a, W: Write> LatexWriter<'a, W> {
                     };
                     let name = format!("\\{}", name);
                     if *arg_count > 0 {
-                        self.command_with(command, &name, &vec![arg_count.to_string().as_str()])?;
+                        self.command_with(command, &name, &[arg_count.to_string().as_str()])?;
                     } else {
                         self.command(command, &name)?;
                     }
@@ -609,7 +615,7 @@ impl<'a, W: Write> BlockVisitor for LatexWriter<'a, W> {
         label: &Option<Label>,
     ) -> crate::error::Result<()> {
         self.begin_line()?;
-        self.begin_env_with("figure", &vec!["h!bt"])?;
+        self.begin_env_with("figure", &["h!bt"])?;
         self.end_line()?;
         self.begin_line()?;
         self.just_command("centering")?;
@@ -692,15 +698,11 @@ impl<'a, W: Write> BlockVisitor for LatexWriter<'a, W> {
         self.end_lines(if *self.indent.borrow() == 1 { 2 } else { 1 })
     }
 
-    fn start_definition_list_term(&self, label: &Option<Label>) -> crate::error::Result<()> {
+    fn start_definition(&self, term: &str, label: &Option<Label>) -> crate::error::Result<()> {
         self.begin_line()?;
         self.just_command("item")?;
         self.write_label(&label)?;
-        self.write(" [")
-    }
-
-    fn end_definition_list_term(&self, _: &Option<Label>) -> crate::error::Result<()> {
-        self.write("] ")
+        self.write(&format!(" [{}] ", term))
     }
 
     fn start_definition_list_text(&self) -> crate::error::Result<()> {
@@ -711,7 +713,7 @@ impl<'a, W: Write> BlockVisitor for LatexWriter<'a, W> {
         self.end_line()
     }
 
-    fn formatted(&self, value: &String, label: &Option<Label>) -> crate::error::Result<()> {
+    fn formatted(&self, value: &str, label: &Option<Label>) -> crate::error::Result<()> {
         self.begin_line()?;
         self.write_label(&label)?;
         self.begin_env("verbatim")?;
@@ -726,7 +728,7 @@ impl<'a, W: Write> BlockVisitor for LatexWriter<'a, W> {
 
     fn code_block(
         &self,
-        code: &String,
+        code: &str,
         language: &Option<String>,
         caption: &Option<Caption>,
         label: &Option<Label>,
@@ -757,18 +759,14 @@ impl<'a, W: Write> BlockVisitor for LatexWriter<'a, W> {
 
     fn start_paragraph(
         &self,
-        _styles: &Vec<ParagraphStyle>,
+        _alignment: &Alignment,
         label: &Option<Label>,
     ) -> crate::error::Result<()> {
         self.begin_line()?;
         self.write_label(&label)
     }
 
-    fn end_paragraph(
-        &self,
-        _styles: &Vec<ParagraphStyle>,
-        _: &Option<Label>,
-    ) -> crate::error::Result<()> {
+    fn end_paragraph(&self, _alignment: &Alignment, _: &Option<Label>) -> crate::error::Result<()> {
         self.end_lines(2)
     }
 
@@ -808,7 +806,7 @@ impl<'a, W: Write> BlockVisitor for LatexWriter<'a, W> {
 impl<'a, W: Write> TableVisitor for LatexWriter<'a, W> {
     fn start_table(&self, _: &Option<Caption>, _: &Option<Label>) -> crate::error::Result<()> {
         self.begin_line()?;
-        self.begin_env_with("table", &vec!["h!bt"])?;
+        self.begin_env_with("table", &["h!bt"])?;
         self.end_line()?;
         self.begin_line()?;
         self.just_command("centering")?;
@@ -829,8 +827,7 @@ impl<'a, W: Write> TableVisitor for LatexWriter<'a, W> {
         let col_spec: Vec<&str> = table_head
             .iter()
             .map(|c| match c.alignment() {
-                Alignment::Default => "l",
-                Alignment::Left => "l",
+                Alignment::Left | Alignment::Justified => "l",
                 Alignment::Right => "r",
                 Alignment::Centered => "c",
             })
@@ -847,7 +844,7 @@ impl<'a, W: Write> TableVisitor for LatexWriter<'a, W> {
             "{} \\\\",
             table_head
                 .iter()
-                .map(|c| c.label().as_str())
+                .map(|c| c.text().as_str())
                 .collect::<Vec<&str>>()
                 .join(" & ")
         ))?;
@@ -936,7 +933,7 @@ impl<'a, W: Write> InlineVisitor for LatexWriter<'a, W> {
     fn image(&self, value: &Image) -> crate::error::Result<()> {
         self.command(
             "includegraphics",
-            &match value.link().target() {
+            &match value.inner().target() {
                 HyperLinkTarget::External(v) => v.to_string(),
                 HyperLinkTarget::Internal(v) => v.to_string(),
             },
@@ -968,7 +965,7 @@ impl<'a, W: Write> InlineVisitor for LatexWriter<'a, W> {
         self.write(" ")
     }
 
-    fn start_span(&self, styles: &Vec<SpanStyle>) -> crate::error::Result<()> {
+    fn start_span(&self, styles: &[SpanStyle]) -> crate::error::Result<()> {
         let mut style_stack: Vec<&str> = Vec::new();
         for style in styles {
             match style {
@@ -1033,14 +1030,13 @@ impl<'a, W: Write> InlineVisitor for LatexWriter<'a, W> {
         Ok(())
     }
 
-    fn end_span(&self, styles: &Vec<SpanStyle>) -> crate::error::Result<()> {
+    fn end_span(&self, styles: &[SpanStyle]) -> crate::error::Result<()> {
         self.write(&string_of_strings(
             "}",
             styles
                 .iter()
                 .filter(|style| **style != SpanStyle::Plain)
-                .collect::<Vec<&SpanStyle>>()
-                .len(),
+                .count(),
         ))
     }
 }

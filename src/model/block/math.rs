@@ -1,4 +1,4 @@
-use crate::model::block::caption::Captioned;
+use crate::model::block::caption::HasCaption;
 use crate::model::block::{BlockContent, Caption};
 use crate::model::block::{HasLabel, Label};
 use crate::model::inline::Math;
@@ -8,7 +8,7 @@ use crate::model::inline::Math;
 // ------------------------------------------------------------------------------------------------
 
 ///
-/// .
+/// A math block wraps an inline `Math` so that it forms a stand-alone block within the document.
 ///
 #[derive(Clone, Debug)]
 pub struct MathBlock {
@@ -27,16 +27,19 @@ block_impls!(MathBlock);
 
 has_captioned_impls!(MathBlock);
 
-impl MathBlock {
-    pub fn new(math: Math) -> Self {
+impl From<Math> for MathBlock {
+    fn from(inner: Math) -> Self {
         Self {
             label: None,
-            math,
+            math: inner,
             caption: None,
         }
     }
+}
 
-    pub fn new_with_caption(math: Math, caption: Caption) -> Self {
+impl MathBlock {
+    /// Create a new instance from the inline `Math` instance and a `Caption`.
+    pub fn with_caption(math: Math, caption: Caption) -> Self {
         Self {
             label: None,
             math,
@@ -44,10 +47,12 @@ impl MathBlock {
         }
     }
 
-    pub fn new_with_caption_str(math: Math, caption: &str) -> Self {
-        Self::new_with_caption(math, caption.into())
+    /// Create a new instance from the inline `Math` instance and a caption string.
+    pub fn with_caption_str(math: Math, caption: &str) -> Self {
+        Self::with_caption(math, caption.into())
     }
 
+    /// Return a reference to the inner `Math` instance.
     pub fn inner(&self) -> &Math {
         &self.math
     }

@@ -11,16 +11,23 @@ use std::ops::Deref;
 #[derive(Clone, Debug)]
 pub struct Caption(String);
 
-pub trait Captioned {
+///
+/// Implemented by values that support a caption.
+///
+pub trait HasCaption {
+    /// Returns `true` if a caption is set, else `false`.
     fn has_caption(&self) -> bool {
         self.caption().is_some()
     }
 
+    /// Return the caption, if present.
     fn caption(&self) -> &Option<Caption>;
 
-    fn set_caption(&mut self, caption: Caption);
+    /// Set the caption to the provided value.
+    fn set_caption(&mut self, caption: Caption) -> &mut Self;
 
-    fn unset_caption(&mut self);
+    /// Set the caption to `None`.
+    fn unset_caption(&mut self) -> &mut Self;
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -34,14 +41,14 @@ impl Default for Caption {
 }
 
 impl From<String> for Caption {
-    fn from(s: String) -> Self {
-        Self(s)
+    fn from(inner: String) -> Self {
+        Self::from(inner.as_str())
     }
 }
 
 impl From<&str> for Caption {
-    fn from(s: &str) -> Self {
-        Self(s.to_string())
+    fn from(inner: &str) -> Self {
+        Self(inner.to_string())
     }
 }
 
@@ -53,14 +60,4 @@ impl Deref for Caption {
     }
 }
 
-impl Caption {
-    /// Return a reference to the inner string.
-    pub fn inner(&self) -> &String {
-        &self.0
-    }
-
-    /// Return the inner string.
-    pub fn into_inner(self) -> String {
-        self.0
-    }
-}
+inner_impl!(Caption, String);

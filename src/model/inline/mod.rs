@@ -40,23 +40,6 @@ pub enum InlineContent {
 /// Note that the `add_` methods all return `&mut Self` and so calls to these may be chained.
 ///
 pub trait HasInlineContent: Default + HasInnerContent<InlineContent> {
-    /// Create a new inline content container from the provided content item.
-    fn from(inner: InlineContent) -> Self {
-        let mut new_self = Self::default();
-        new_self.add_content(inner).unwrap();
-        new_self
-    }
-
-    /// Create a new inline content container from the provided content items.
-    fn from_all(inner: Vec<InlineContent>) -> Self {
-        let mut new_self = Self::default();
-        let mut inner = inner;
-        for item in inner.drain(..) {
-            new_self.add_content(item).unwrap();
-        }
-        new_self
-    }
-
     /// Create a new inline content container from the provided `HyperLink` content item.
     fn link(inner: HyperLink) -> Self {
         let mut new_self = Self::default();
@@ -147,7 +130,7 @@ pub trait HasInlineContent: Default + HasInnerContent<InlineContent> {
 
     /// Add the provided `Span` to this container's inner content.
     fn add_span(&mut self, inner: Span) -> &mut Self {
-        self.add_content(InlineContent::Span(inner.into())).unwrap();
+        self.add_content(InlineContent::Span(inner)).unwrap();
         self
     }
 
@@ -156,121 +139,121 @@ pub trait HasInlineContent: Default + HasInnerContent<InlineContent> {
     /// Create a new inline content container as a `Span`, with `TextStyle::Plain` applied to the
     /// provided content.
     fn plain(inner: InlineContent) -> Self {
-        Self::span(Span::new_inner_with_style(inner, SpanStyle::Plain))
+        Self::span(Span::inner_with_style(inner, SpanStyle::Plain))
     }
 
     /// Create a new inline content container as a `Span`, with `TextStyle::Plain` applied to the
     /// provided string as a `Text` instance.
     fn plain_str(inner: &str) -> Self {
-        Self::span(Span::new_with_style(inner, SpanStyle::Plain))
+        Self::span(Span::with_style(inner, SpanStyle::Plain))
     }
 
     /// Create a new inline content container as a `Span`, with `TextStyle::Italic` applied to the
     /// provided content.
     fn italic(inner: InlineContent) -> Self {
-        Self::span(Span::new_inner_with_style(inner, SpanStyle::Italic))
+        Self::span(Span::inner_with_style(inner, SpanStyle::Italic))
     }
 
     /// Create a new inline content container as a `Span`, with `TextStyle::Italic` applied to the
     /// provided string as a `Text` instance.
     fn italic_str(inner: &str) -> Self {
-        Self::span(Span::new_with_style(inner, SpanStyle::Italic))
+        Self::span(Span::with_style(inner, SpanStyle::Italic))
     }
 
     /// Create a new inline content container as a `Span`, with `TextStyle::Bold` applied to the
     /// provided content.
     fn bold(inner: InlineContent) -> Self {
-        Self::span(Span::new_inner_with_style(inner, SpanStyle::Bold))
+        Self::span(Span::inner_with_style(inner, SpanStyle::Bold))
     }
 
     /// Create a new inline content container as a `Span`, with `TextStyle::Bold` applied to the
     /// provided string as a `Text` instance.
     fn bold_str(inner: &str) -> Self {
-        Self::span(Span::new_with_style(inner, SpanStyle::Bold))
+        Self::span(Span::with_style(inner, SpanStyle::Bold))
     }
 
     /// Create a new inline content container as a `Span`, with `TextStyle::Mono` applied to the
     /// provided content.
     fn mono(inner: InlineContent) -> Self {
-        Self::span(Span::new_inner_with_style(inner, SpanStyle::Mono))
+        Self::span(Span::inner_with_style(inner, SpanStyle::Mono))
     }
 
     /// Create a new inline content container as a `Span`, with `TextStyle::Mono` applied to the
     /// provided string as a `Text` instance.
     fn mono_str(inner: &str) -> Self {
-        Self::span(Span::new_with_style(inner, SpanStyle::Mono))
+        Self::span(Span::with_style(inner, SpanStyle::Mono))
     }
 
     /// Create a new inline content container as a `Span`, with `TextStyle::Code` applied to the
     /// provided content.
     fn code(inner: InlineContent) -> Self {
-        Self::span(Span::new_inner_with_style(inner, SpanStyle::Code))
+        Self::span(Span::inner_with_style(inner, SpanStyle::Code))
     }
 
     /// Create a new inline content container as a `Span`, with `TextStyle::Code` applied to the
     /// provided string as a `Text` instance.
     fn code_str(inner: &str) -> Self {
-        Self::span(Span::new_with_style(inner, SpanStyle::Code))
+        Self::span(Span::with_style(inner, SpanStyle::Code))
     }
 
     /// Create a new inline content container as a `Span`, with `TextStyle::Strikethrough` applied to the
     /// provided content.
     fn strikethrough(inner: InlineContent) -> Self {
-        Self::span(Span::new_inner_with_style(inner, SpanStyle::Strikethrough))
+        Self::span(Span::inner_with_style(inner, SpanStyle::Strikethrough))
     }
 
     /// Create a new inline content container as a `Span`, with `TextStyle::Strikethrough` applied to the
     /// provided string as a `Text` instance.
     fn strikethrough_str(inner: &str) -> Self {
-        Self::span(Span::new_with_style(inner, SpanStyle::Strikethrough))
+        Self::span(Span::with_style(inner, SpanStyle::Strikethrough))
     }
 
     /// Create a new inline content container as a `Span`, with `TextStyle::Underline` applied to the
     /// provided content.
     fn underline(inner: InlineContent) -> Self {
-        Self::span(Span::new_inner_with_style(inner, SpanStyle::Underline))
+        Self::span(Span::inner_with_style(inner, SpanStyle::Underline))
     }
 
     /// Create a new inline content container as a `Span`, with `TextStyle::Underline` applied to the
     /// provided string as a `Text` instance.
     fn underline_str(inner: &str) -> Self {
-        Self::span(Span::new_with_style(inner, SpanStyle::Underline))
+        Self::span(Span::with_style(inner, SpanStyle::Underline))
     }
 
     /// Create a new inline content container as a `Span`, with `TextStyle::SmallCaps` applied to the
     /// provided content.
     fn small_caps(inner: InlineContent) -> Self {
-        Self::span(Span::new_inner_with_style(inner, SpanStyle::SmallCaps))
+        Self::span(Span::inner_with_style(inner, SpanStyle::SmallCaps))
     }
 
     /// Create a new inline content container as a `Span`, with `TextStyle::SmallCaps` applied to the
     /// provided string as a `Text` instance.
     fn small_caps_str(inner: &str) -> Self {
-        Self::span(Span::new_with_style(inner, SpanStyle::SmallCaps))
+        Self::span(Span::with_style(inner, SpanStyle::SmallCaps))
     }
 
     /// Create a new inline content container as a `Span`, with `TextStyle::Superscript` applied to the
     /// provided content.
     fn superscript(inner: InlineContent) -> Self {
-        Self::span(Span::new_inner_with_style(inner, SpanStyle::Superscript))
+        Self::span(Span::inner_with_style(inner, SpanStyle::Superscript))
     }
 
     /// Create a new inline content container as a `Span`, with `TextStyle::Superscript` applied to the
     /// provided string as a `Text` instance.
     fn superscript_str(inner: &str) -> Self {
-        Self::span(Span::new_with_style(inner, SpanStyle::Superscript))
+        Self::span(Span::with_style(inner, SpanStyle::Superscript))
     }
 
     /// Create a new inline content container as a `Span`, with `TextStyle::Subscript` applied to the
     /// provided content.
     fn subscript(inner: InlineContent) -> Self {
-        Self::span(Span::new_inner_with_style(inner, SpanStyle::Subscript))
+        Self::span(Span::inner_with_style(inner, SpanStyle::Subscript))
     }
 
     /// Create a new inline content container as a `Span`, with `TextStyle::Subscript` applied to the
     /// provided string as a `Text` instance.
     fn subscript_str(inner: &str) -> Self {
-        Self::span(Span::new_with_style(inner, SpanStyle::Subscript))
+        Self::span(Span::with_style(inner, SpanStyle::Subscript))
     }
 
     // --------------------------------------------------------------------------------------------
@@ -288,7 +271,7 @@ pub trait HasInlineContent: Default + HasInnerContent<InlineContent> {
 // Private Functions
 // ------------------------------------------------------------------------------------------------
 
-fn unformat(s: &mut String, content: &Vec<InlineContent>) -> String {
+fn unformat(s: &mut String, content: &[InlineContent]) -> String {
     for item in content {
         match item {
             // TODO: all local refs need alt text.

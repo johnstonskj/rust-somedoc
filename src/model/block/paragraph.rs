@@ -1,31 +1,11 @@
 use crate::error;
-use crate::model::block::{BlockContent, Label};
+use crate::model::block::{Alignment, BlockContent, HasAlignment, Label};
 use crate::model::inline::{HasInlineContent, InlineContent, Span};
-use crate::model::{block::HasLabel, HasInnerContent, HasStyles, Style};
+use crate::model::{block::HasLabel, HasInnerContent};
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
 // ------------------------------------------------------------------------------------------------
-
-///
-/// The text alignment for this paragraph, used in ParagraphStyle.
-///
-#[derive(Clone, Debug, PartialEq)]
-pub enum Alignment {
-    Left,
-    Right,
-    Centered,
-    Justified,
-}
-
-///
-/// The styles for the paragraph.
-///
-#[derive(Clone, Debug, PartialEq)]
-pub enum ParagraphStyle {
-    Plain,
-    Aligned(Alignment),
-}
 
 ///
 /// A paragraph is a bounded block of inline content, usually text.
@@ -34,29 +14,11 @@ pub enum ParagraphStyle {
 pub struct Paragraph {
     label: Option<Label>,
     inner: Vec<InlineContent>,
-    styles: Vec<ParagraphStyle>,
+    alignment: Alignment,
 }
 
 // ------------------------------------------------------------------------------------------------
 // Implementations
-// ------------------------------------------------------------------------------------------------
-
-impl Default for Alignment {
-    fn default() -> Self {
-        Self::Left
-    }
-}
-
-// ------------------------------------------------------------------------------------------------
-
-impl Default for ParagraphStyle {
-    fn default() -> Self {
-        Self::Plain
-    }
-}
-
-impl Style for ParagraphStyle {}
-
 // ------------------------------------------------------------------------------------------------
 
 impl Default for Paragraph {
@@ -64,61 +26,26 @@ impl Default for Paragraph {
         Self {
             label: None,
             inner: Default::default(),
-            styles: Default::default(),
+            alignment: Default::default(),
         }
     }
 }
 
 label_impl!(Paragraph);
 
+alignment_impl!(Paragraph);
+
 block_impls!(Paragraph);
 
 has_inline_impls!(Paragraph);
 
-has_styles_impls!(Paragraph, ParagraphStyle);
-
 impl Paragraph {
-    pub fn new(inner: &str) -> Self {
-        Self::new_with_style(inner, ParagraphStyle::default())
-    }
-
-    pub fn new_with_style(inner: &str, style: ParagraphStyle) -> Self {
+    /// Create a new instance with the string as inline content and the provided alignment.
+    pub fn with_alignment(inner: &str, alignment: Alignment) -> Self {
         Self {
             label: None,
             inner: vec![Span::plain_str(inner).into()],
-            styles: vec![style],
+            alignment,
         }
-    }
-
-    // --------------------------------------------------------------------------------------------
-
-    pub fn set_left_aligned(&mut self) {
-        self.add_style(ParagraphStyle::Aligned(Alignment::Left))
-            .unwrap()
-    }
-
-    pub fn set_right_aligned(&mut self) {
-        self.add_style(ParagraphStyle::Aligned(Alignment::Right))
-            .unwrap()
-    }
-
-    pub fn set_ragged_left(&mut self) {
-        self.add_style(ParagraphStyle::Aligned(Alignment::Right))
-            .unwrap()
-    }
-
-    pub fn set_ragged_right(&mut self) {
-        self.add_style(ParagraphStyle::Aligned(Alignment::Left))
-            .unwrap()
-    }
-
-    pub fn set_centered(&mut self) {
-        self.add_style(ParagraphStyle::Aligned(Alignment::Centered))
-            .unwrap()
-    }
-
-    pub fn set_justified(&mut self) {
-        self.add_style(ParagraphStyle::Aligned(Alignment::Justified))
-            .unwrap()
     }
 }

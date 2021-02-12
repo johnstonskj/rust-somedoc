@@ -17,8 +17,9 @@
 */
 
 use crate::error;
-use crate::model::block::table::Alignment;
-use crate::model::block::{Caption, Column, HeadingLevel, Label, ListKind};
+use crate::model::block::{
+    Alignment, Caption, Column, HasAlignment, HasCaption, HeadingLevel, Label, ListKind,
+};
 use crate::model::document::Metadata;
 use crate::model::inline::{Character, HyperLink, HyperLinkTarget, Image, Math, SpanStyle, Text};
 use crate::model::visitor::{
@@ -194,6 +195,11 @@ impl<'a, W: Write> Writer<'a, W> for MarkdownWriter<'a, W> {
     fn new(w: &'a mut W) -> Self {
         Self::new_with(w, Default::default())
     }
+
+    fn write_document(&self, doc: &Document) -> crate::error::Result<()> {
+        walk_document(doc, self)?;
+        Ok(())
+    }
 }
 
 impl<'a, W: Write> ConfigurableWriter<'a, W, MarkdownFlavor> for MarkdownWriter<'a, W> {
@@ -253,7 +259,7 @@ impl<'a, W: Write> MarkdownWriter<'a, W> {
         Ok(())
     }
 
-    fn make_style_stack(&self, styles: &Vec<SpanStyle>) -> Vec<&str> {
+    fn make_style_stack(&self, styles: &[SpanStyle]) -> Vec<&str> {
         let mut style_stack = Vec::new();
         for style in styles {
             match style {
@@ -332,7 +338,7 @@ impl<'a, W: Write> DocumentVisitor for MarkdownWriter<'a, W> {
                 ));
             }
             MarkdownFlavor::XWiki => {
-                let _ = self.write(&format!("{}", meta_datum.yaml_string()));
+                let _ = self.write(&meta_datum.yaml_string());
             }
         }
         self.end_line()?;
@@ -412,7 +418,7 @@ impl<'a, W: Write> BlockVisitor for MarkdownWriter<'a, W> {
         if self.flavor == MarkdownFlavor::XWiki {
             let mut s = String::new();
             for _ in 0..level.clone() as usize {
-                s.push_str("=");
+                s.push('=');
             }
             self.write(&format!(" {}", s))?;
         }
@@ -484,12 +490,10 @@ impl<'a, W: Write> BlockVisitor for MarkdownWriter<'a, W> {
                         self.write(".")?;
                     }
                     self.write(" ")?;
+                } else if *kind == ListKind::Ordered {
+                    self.write("1. ")?;
                 } else {
-                    if *kind == ListKind::Ordered {
-                        self.write("1. ")?;
-                    } else {
-                        self.write("* ")?;
-                    }
+                    self.write("* ")?;
                 }
             }
         }
@@ -500,29 +504,18 @@ impl<'a, W: Write> BlockVisitor for MarkdownWriter<'a, W> {
         self.end_line()
     }
 
-    fn start_definition_list_term(&self, _label: &Option<Label>) -> crate::error::Result<()> {
+    fn start_definition(&self, term: &str, _label: &Option<Label>) -> crate::error::Result<()> {
         match self.flavor {
             MarkdownFlavor::Multi | MarkdownFlavor::PhpExtra => {
                 // Do nothing
             }
             MarkdownFlavor::XWiki => {
-                write!(self.w.borrow_mut(), "; ")?;
-            }
-            _ => {
-                write!(self.w.borrow_mut(), "**")?;
-            }
-        }
-        Ok(())
-    }
-
-    fn end_definition_list_term(&self, _label: &Option<Label>) -> crate::error::Result<()> {
-        match self.flavor {
-            MarkdownFlavor::Multi | MarkdownFlavor::PhpExtra | MarkdownFlavor::XWiki => {
+                self.write(&format!("; {}", term))?;
                 self.end_line()?;
                 self.start_line()?;
             }
             _ => {
-                write!(self.w.borrow_mut(), "**:- ")?;
+                self.write(&format!("**{}**:- ", term))?;
             }
         }
         Ok(())
@@ -538,7 +531,7 @@ impl<'a, W: Write> BlockVisitor for MarkdownWriter<'a, W> {
         Ok(())
     }
 
-    fn formatted(&self, value: &String, _label: &Option<Label>) -> crate::error::Result<()> {
+    fn formatted(&self, value: &str, _label: &Option<Label>) -> crate::error::Result<()> {
         match self.flavor {
             MarkdownFlavor::Strict
             | MarkdownFlavor::CommonMark
@@ -558,7 +551,7 @@ impl<'a, W: Write> BlockVisitor for MarkdownWriter<'a, W> {
 
     fn code_block(
         &self,
-        code: &String,
+        code: &str,
         language: &Option<String>,
         _caption: &Option<Caption>,
         _label: &Option<Label>,
@@ -664,7 +657,7 @@ impl<'a, W: Write> TableVisitor for MarkdownWriter<'a, W> {
             } else {
                 self.table_sep_row.borrow_mut().push(
                     match column_cell.alignment() {
-                        Alignment::Default => "-----",
+                        Alignment::Justified => "-----",
                         Alignment::Left => ":----",
                         Alignment::Right => "----:",
                         Alignment::Centered => "--:--",
@@ -673,7 +666,7 @@ impl<'a, W: Write> TableVisitor for MarkdownWriter<'a, W> {
                 );
                 ""
             },
-            column_cell.label()
+            column_cell.text()
         ))
     }
 
@@ -751,7 +744,7 @@ impl<'a, W: Write> InlineVisitor for MarkdownWriter<'a, W> {
             "!"
         };
         self.write(prefix)?;
-        self.link(value.link())?;
+        self.link(value.inner())?;
         Ok(())
     }
 
@@ -792,7 +785,7 @@ impl<'a, W: Write> InlineVisitor for MarkdownWriter<'a, W> {
         Ok(())
     }
 
-    fn start_span(&self, styles: &Vec<SpanStyle>) -> crate::error::Result<()> {
+    fn start_span(&self, styles: &[SpanStyle]) -> crate::error::Result<()> {
         let style_stack = self.make_style_stack(styles);
         if !style_stack.is_empty() {
             self.write(&style_stack.join(""))?;
@@ -800,7 +793,7 @@ impl<'a, W: Write> InlineVisitor for MarkdownWriter<'a, W> {
         Ok(())
     }
 
-    fn end_span(&self, styles: &Vec<SpanStyle>) -> crate::error::Result<()> {
+    fn end_span(&self, styles: &[SpanStyle]) -> crate::error::Result<()> {
         let style_stack = self.make_style_stack(styles);
         if !style_stack.is_empty() {
             self.write(
