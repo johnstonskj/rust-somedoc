@@ -107,6 +107,15 @@ println!("{}", doc_str);
 
 ## Changes
 
+**Version 0.2.3**
+
+* Added: JSON writer
+  * Added a feature `fmt_json`.
+  * Added dependencies on `serde` and `serde_json`.
+  * Also added a `version` field to the `Document` to allow for tool checking, this will be the crate version on write.  
+  * All structures now support `Serialize`/`Deserialize` for Serde
+* Added JSON reader using the same Serde support.
+
 **Version 0.2.2**
 
 * Added: mostly complete API/library documentation.

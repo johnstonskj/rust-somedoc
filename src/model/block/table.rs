@@ -3,6 +3,8 @@ use crate::model::block::{Alignment, BlockContent, Caption, HasAlignment, HasCap
 use crate::model::inline::HasInlineContent;
 use crate::model::inline::{Character, InlineContent};
 use crate::model::{block::HasLabel, HasInnerContent};
+#[cfg(feature = "fmt_json")]
+use serde::{Deserialize, Serialize};
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
@@ -12,10 +14,15 @@ use crate::model::{block::HasLabel, HasInnerContent};
 /// A typical, simple, table of rows and columns.
 ///
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub struct Table {
+    #[cfg_attr(feature = "fmt_json", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(feature = "fmt_json", serde(default))]
     label: Option<Label>,
     columns: Vec<Column>,
     rows: Vec<Row>,
+    #[cfg_attr(feature = "fmt_json", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(feature = "fmt_json", serde(default))]
     caption: Option<Caption>,
 }
 
@@ -23,6 +30,7 @@ pub struct Table {
 /// Defines the shape of a table, each column has a label and alignment.
 ///
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub struct Column {
     text: String,
     alignment: Alignment,
@@ -32,6 +40,7 @@ pub struct Column {
 /// Rows represent data in the table and consist of a vector of `Cell`s.
 ///
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub struct Row {
     cells: Vec<Cell>,
 }
@@ -40,7 +49,10 @@ pub struct Row {
 /// A Cell is an element at a specific row and column in the table. It is an inline content container.
 ///
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub struct Cell {
+    #[cfg_attr(feature = "fmt_json", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(feature = "fmt_json", serde(default))]
     label: Option<Label>,
     inner: Vec<InlineContent>,
 }

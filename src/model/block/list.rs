@@ -3,6 +3,8 @@ use crate::model::block::{BlockContent, Label};
 use crate::model::inline::Text;
 use crate::model::inline::{HasInlineContent, InlineContent};
 use crate::model::{block::HasLabel, HasInnerContent};
+#[cfg(feature = "fmt_json")]
+use serde::{Deserialize, Serialize};
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
@@ -12,6 +14,7 @@ use crate::model::{block::HasLabel, HasInnerContent};
 /// The form of list, currently this only covers the ordering of items.
 ///
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub enum ListKind {
     /// An ordered/numbered item list.
     Ordered,
@@ -26,7 +29,10 @@ pub enum ListKind {
 /// and which may contain either another list, or a `Item`.
 ///
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub struct List {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
     label: Option<Label>,
     kind: ListKind,
     inner: Vec<ListItem>,
@@ -36,6 +42,7 @@ pub struct List {
 /// Inner node in a `List` tree.
 ///
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub enum ListItem {
     List(List),
     Item(Item),
@@ -45,7 +52,10 @@ pub enum ListItem {
 /// A leaf in the `List` tree, it's inner content list of `InlineContent` values.
 ///
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub struct Item {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
     label: Option<Label>,
     inner: Vec<InlineContent>,
 }

@@ -1,5 +1,7 @@
 use crate::model::block::BlockContent;
 use crate::model::inline::{HyperLink, InlineContent};
+#[cfg(feature = "fmt_json")]
+use serde::{Deserialize, Serialize};
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
@@ -9,6 +11,7 @@ use crate::model::inline::{HyperLink, InlineContent};
 /// An image, identified by the link content.
 ///
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub struct Image(HyperLink);
 
 // ------------------------------------------------------------------------------------------------

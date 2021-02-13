@@ -5,6 +5,8 @@ This module provides the root `Document` type and document metadata properties.
 use crate::error;
 use crate::model::block::{BlockContent, HasBlockContent, Paragraph};
 use crate::model::HasInnerContent;
+#[cfg(feature = "fmt_json")]
+use serde::{Deserialize, Serialize};
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
@@ -14,6 +16,7 @@ use crate::model::HasInnerContent;
 /// Common metadata properties.
 ///
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub enum Metadata {
     /// An author to attribute.
     Author(Author),
@@ -37,12 +40,17 @@ pub enum Metadata {
 ///  A structured metadata property.
 ///
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub struct Author {
     /// The author's name.
     pub name: String,
     /// Optional email address for the author.
+    #[cfg_attr(feature = "fmt_json", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(feature = "fmt_json", serde(default))]
     pub email: Option<String>,
     /// Optional organizational affiliation for the author.
+    #[cfg_attr(feature = "fmt_json", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(feature = "fmt_json", serde(default))]
     pub organization: Option<String>,
 }
 
@@ -50,12 +58,17 @@ pub struct Author {
 ///  A structured metadata property.
 ///
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub struct Copyright {
     /// Year of copyright.
     pub year: u16,
     /// Copyright holder.
+    #[cfg_attr(feature = "fmt_json", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(feature = "fmt_json", serde(default))]
     pub organization: Option<String>,
     /// Additional comments.
+    #[cfg_attr(feature = "fmt_json", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(feature = "fmt_json", serde(default))]
     pub comment: Option<String>,
 }
 
@@ -63,6 +76,7 @@ pub struct Copyright {
 ///  A structured metadata property.
 ///
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub struct SimpleProperty {
     /// The property key, or name.
     pub key: String,
@@ -77,8 +91,14 @@ pub struct SimpleProperty {
 /// Note that the `add_` and `set_` methods all return `&mut Self` and so calls to these may be chained.
 ///
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub struct Document {
+    version: String,
+    #[cfg_attr(feature = "fmt_json", serde(skip_serializing_if = "Vec::is_empty"))]
+    #[cfg_attr(feature = "fmt_json", serde(default))]
     metadata: Vec<Metadata>,
+    #[cfg_attr(feature = "fmt_json", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(feature = "fmt_json", serde(default))]
     abstract_block: Option<Paragraph>,
     content: Vec<BlockContent>,
 }
@@ -98,6 +118,7 @@ pub struct Document {
 impl Default for Document {
     fn default() -> Self {
         Self {
+            version: env!("CARGO_PKG_VERSION").to_string(),
             metadata: Default::default(),
             abstract_block: None,
             content: Default::default(),
@@ -203,6 +224,11 @@ impl Document {
             key: name.to_string(),
             value: value.to_string(),
         }))
+    }
+
+    /// Returns `true` if an abstract has been added to this document, else `false`.
+    pub fn has_abstract(&self) -> bool {
+        self.abstract_block.is_some()
     }
 
     /// Add a `Paragraph` acting as the abstract to this document.

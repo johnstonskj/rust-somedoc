@@ -2,6 +2,8 @@ use crate::error;
 use crate::model::block::{BlockContent, Label};
 use crate::model::inline::{HasInlineContent, InlineContent, Text};
 use crate::model::{block::HasLabel, HasInnerContent};
+#[cfg(feature = "fmt_json")]
+use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 
 // ------------------------------------------------------------------------------------------------
@@ -13,6 +15,7 @@ use std::convert::TryFrom;
 ///
 #[derive(Clone, Debug, PartialEq)]
 #[repr(u8)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub enum HeadingLevel {
     /// Level 1 heading/section (top-level).
     Section = 1,
@@ -35,7 +38,10 @@ pub enum HeadingLevel {
 /// is an inner content list of `InlineContent` values.
 ///
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub struct Heading {
+    #[cfg_attr(feature = "fmt_json", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(feature = "fmt_json", serde(default))]
     label: Option<Label>,
     level: HeadingLevel,
     inner: Vec<InlineContent>,

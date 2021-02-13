@@ -2,6 +2,8 @@ use crate::error;
 use crate::model::block::{Alignment, BlockContent, HasAlignment, Label};
 use crate::model::inline::{HasInlineContent, InlineContent, Span};
 use crate::model::{block::HasLabel, HasInnerContent};
+#[cfg(feature = "fmt_json")]
+use serde::{Deserialize, Serialize};
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
@@ -11,7 +13,10 @@ use crate::model::{block::HasLabel, HasInnerContent};
 /// A paragraph is a bounded block of inline content, usually text.
 ///
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub struct Paragraph {
+    #[cfg_attr(feature = "fmt_json", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(feature = "fmt_json", serde(default))]
     label: Option<Label>,
     inner: Vec<InlineContent>,
     alignment: Alignment,

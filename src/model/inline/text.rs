@@ -2,6 +2,8 @@ use crate::error;
 use crate::model::inline::Character;
 use crate::model::inline::{HasInlineContent, InlineContent};
 use crate::model::{HasInnerContent, HasStyles, Style};
+#[cfg(feature = "fmt_json")]
+use serde::{Deserialize, Serialize};
 use std::ops::Deref;
 
 // ------------------------------------------------------------------------------------------------
@@ -13,6 +15,7 @@ use std::ops::Deref;
 /// the order they were added to the span. Writers should simply ignore styles they do not support.
 ///
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub enum SpanStyle {
     Plain,
     Italic,
@@ -31,6 +34,7 @@ pub enum SpanStyle {
 /// A size modifier for styling a `Span`.
 ///
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub enum Size {
     Largest,
     Larger,
@@ -45,8 +49,11 @@ pub enum Size {
 /// A span consists of a list of styles to apply to an inner list of inline content.
 ///
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub struct Span {
     inner: Vec<InlineContent>,
+    #[cfg_attr(feature = "fmt_json", serde(skip_serializing_if = "Vec::is_empty"))]
+    #[cfg_attr(feature = "fmt_json", serde(default))]
     styles: Vec<SpanStyle>,
 }
 
@@ -54,6 +61,7 @@ pub struct Span {
 /// A `Text` instance holds simple plain, un-styled, text.
 ///
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub struct Text(String);
 
 // ------------------------------------------------------------------------------------------------

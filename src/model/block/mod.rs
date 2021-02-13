@@ -7,6 +7,8 @@ stands on it's own such as a complete paragraph.
 
 use crate::model::inline::Image;
 use crate::model::HasInnerContent;
+#[cfg(feature = "fmt_json")]
+use serde::{Deserialize, Serialize};
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
@@ -16,6 +18,7 @@ use crate::model::HasInnerContent;
 /// The set of supported block content types.
 ///
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub enum BlockContent {
     /// A comment; this may be written into markup but not included in a rendered version.
     Comment(String),

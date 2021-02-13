@@ -1,3 +1,5 @@
+#[cfg(feature = "fmt_json")]
+use serde::{Deserialize, Serialize};
 use std::ops::Deref;
 
 // ------------------------------------------------------------------------------------------------
@@ -9,6 +11,7 @@ use std::ops::Deref;
 /// blocks that are commonly labeled such as tables, images, etc.
 ///
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub struct Caption(String);
 
 ///

@@ -2,6 +2,8 @@ use crate::model::block::caption::HasCaption;
 use crate::model::block::{BlockContent, Caption};
 use crate::model::block::{HasLabel, Label};
 use crate::model::inline::Math;
+#[cfg(feature = "fmt_json")]
+use serde::{Deserialize, Serialize};
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
@@ -11,9 +13,14 @@ use crate::model::inline::Math;
 /// A math block wraps an inline `Math` so that it forms a stand-alone block within the document.
 ///
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub struct MathBlock {
+    #[cfg_attr(feature = "fmt_json", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(feature = "fmt_json", serde(default))]
     label: Option<Label>,
     math: Math,
+    #[cfg_attr(feature = "fmt_json", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(feature = "fmt_json", serde(default))]
     caption: Option<Caption>,
 }
 

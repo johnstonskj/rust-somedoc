@@ -40,5 +40,6 @@ error_chain! {
     foreign_links {
         Fmt(::std::fmt::Error);
         Io(::std::io::Error);
+        Serde(::serde_json::Error) #[cfg(feature = "fmt_json")];
     }
 }

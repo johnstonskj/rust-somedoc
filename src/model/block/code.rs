@@ -1,5 +1,7 @@
 use crate::model::block::{BlockContent, Caption, HasCaption};
 use crate::model::block::{HasLabel, Label};
+#[cfg(feature = "fmt_json")]
+use serde::{Deserialize, Serialize};
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
@@ -9,7 +11,10 @@ use crate::model::block::{HasLabel, Label};
 /// A pre-formatted block of text, no formatting should be done on the inner content.
 ///
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub struct Formatted {
+    #[cfg_attr(feature = "fmt_json", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(feature = "fmt_json", serde(default))]
     label: Option<Label>,
     inner: String,
 }
@@ -18,10 +23,17 @@ pub struct Formatted {
 /// A block of code, syntax highlighting may be used, especially if `language` is specified.
 ///
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub struct CodeBlock {
+    #[cfg_attr(feature = "fmt_json", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(feature = "fmt_json", serde(default))]
     label: Option<Label>,
     code: String,
+    #[cfg_attr(feature = "fmt_json", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(feature = "fmt_json", serde(default))]
     language: Option<String>,
+    #[cfg_attr(feature = "fmt_json", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(feature = "fmt_json", serde(default))]
     caption: Option<Caption>,
 }
 

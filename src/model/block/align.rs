@@ -1,11 +1,5 @@
-/*!
-One-line description.
-
-More detailed description, with
-
-# Example
-
-*/
+#[cfg(feature = "fmt_json")]
+use serde::{Deserialize, Serialize};
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
@@ -15,6 +9,7 @@ More detailed description, with
 /// Specifies the alignment of content within some container.
 ///
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub enum Alignment {
     /// Content is left aligned, right ragged.
     Left,

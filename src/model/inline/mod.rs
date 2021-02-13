@@ -5,6 +5,8 @@ does not stand on it's own. In general the `Text` type is used to represent plai
 */
 
 use crate::model::HasInnerContent;
+#[cfg(feature = "fmt_json")]
+use serde::{Deserialize, Serialize};
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
@@ -14,6 +16,7 @@ use crate::model::HasInnerContent;
 /// The set of supported inline content types.
 ///
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub enum InlineContent {
     /// A link which may be to an internal document location or an external document.
     HyperLink(HyperLink),

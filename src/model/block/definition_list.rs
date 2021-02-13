@@ -2,6 +2,8 @@ use crate::error;
 use crate::model::block::{BlockContent, Label};
 use crate::model::inline::{HasInlineContent, InlineContent};
 use crate::model::{block::HasLabel, HasInnerContent};
+#[cfg(feature = "fmt_json")]
+use serde::{Deserialize, Serialize};
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
@@ -20,7 +22,10 @@ use crate::model::{block::HasLabel, HasInnerContent};
 ///    container.
 ///
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub struct DefinitionList {
+    #[cfg_attr(feature = "fmt_json", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(feature = "fmt_json", serde(default))]
     label: Option<Label>,
     inner: Vec<Definition>,
 }
@@ -29,7 +34,10 @@ pub struct DefinitionList {
 /// A single definition within the list.
 ///
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub struct Definition {
+    #[cfg_attr(feature = "fmt_json", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(feature = "fmt_json", serde(default))]
     label: Option<Label>,
     term: String,
     text: DefinitionPart,
@@ -39,6 +47,7 @@ pub struct Definition {
 /// The `Definition` text, it's inner content list of `InlineContent` values.
 ///
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub struct DefinitionPart {
     inner: Vec<InlineContent>,
 }

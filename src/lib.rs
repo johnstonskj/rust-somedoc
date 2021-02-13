@@ -74,12 +74,19 @@
 *
 * ## Writers
 *
-* The `somedoc::write` module contains a number of serializers that generate specific markup for different platforms.
+* The `somedoc::write` module contains a number of serializers that generate specific markup for
+* different platforms [`html`](html/index.html), [`json`](json/index.html),
+* [`latex`](latex/index.html), and [`markdown`](markdown/index.html).
+*
+* The JSON module is rather different from the rest, it is intended for tool usage and is a
+* direct representation of the `Document` model so that other tools may consume it. To read this
+* format the [`read`](read/index.html) module provides for parsing from a string value of from
+* a `std::io::Read` implementation.
 *
 * ### Examples
 *
-* The following writes a constructed document to `stdout` as a Markdown document. The default flavor supported by
-* the writer is the [CommonMark](https://spec.commonmark.org/0.29/) spec.
+* The following writes a constructed document to `stdout` as a Markdown document. The default
+* flavor supported by the writer is the [CommonMark](https://spec.commonmark.org/0.29/) spec.
 *
 * ```rust
 * # use somedoc::model::Document;
@@ -174,5 +181,8 @@ pub mod macros;
 pub mod error;
 
 pub mod model;
+
+#[cfg(feature = "fmt_json")]
+pub mod read;
 
 pub mod write;

@@ -1,5 +1,7 @@
 use crate::model::block::{Caption, HasCaption, Label};
 use crate::model::inline::InlineContent;
+#[cfg(feature = "fmt_json")]
+use serde::{Deserialize, Serialize};
 
 // ------------------------------------------------------------------------------------------------
 // Public Types
@@ -9,6 +11,7 @@ use crate::model::inline::InlineContent;
 /// The target types used by the `target` field of `HyperLink`.
 ///
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub enum HyperLinkTarget {
     /// The target is an external reference, i.e. URL.
     External(String),
@@ -20,8 +23,11 @@ pub enum HyperLinkTarget {
 /// A link to another document, or an intra-document reference.
 ///
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub struct HyperLink {
     target: HyperLinkTarget,
+    #[cfg_attr(feature = "fmt_json", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(feature = "fmt_json", serde(default))]
     caption: Option<Caption>,
 }
 

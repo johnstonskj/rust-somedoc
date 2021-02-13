@@ -1,6 +1,6 @@
 [package]
 name = "somedoc"
-version = "0.2.2"
+version = "0.2.3"
 authors = ["Simon Johnston <johnstonskj@gmail.com>"]
 edition = "2018"
 description = "A very simple document model and markup generator."
@@ -11,8 +11,9 @@ readme = "README.md"
 publish = true
 
 [features]
-default = ["fmt_html", "fmt_latex", "fmt_markdown"]
+default = ["fmt_html", "fmt_json", "fmt_latex", "fmt_markdown"]
 fmt_html = []
+fmt_json = ["serde", "serde_json"]
 fmt_latex = []
 fmt_markdown = []
 math_builder = []
@@ -28,6 +29,9 @@ blob-uuid = "0.4.0"
 error-chain = "0.12.2"
 lazy_static = "1.4.0"
 regex = "1.4.2"
+
+serde = { version = "1.0.123", features = ["derive"], optional = true }
+serde_json = { version = "1.0.62", optional = true }
 
 [dev-dependencies]
 proptest = "0.10.1"

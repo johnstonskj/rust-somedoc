@@ -54,8 +54,13 @@ use std::str::FromStr;
 
 use crate::error;
 use crate::model::Document;
+#[cfg(feature = "fmt_html")]
 use crate::write::html::HtmlWriter;
+#[cfg(feature = "fmt_json")]
+use crate::write::json::JsonWriter;
+#[cfg(feature = "fmt_latex")]
 use crate::write::latex::LatexWriter;
+#[cfg(feature = "fmt_markdown")]
 use crate::write::markdown::{MarkdownFlavor, MarkdownWriter};
 
 // ------------------------------------------------------------------------------------------------
@@ -74,6 +79,10 @@ pub enum OutputFormat {
     /// Generic HTML, supports math via MathJax and code syntax via hightlight.js.
     #[cfg(feature = "fmt_html")]
     Html,
+
+    /// A direct representation of the model in JSON for external tool integration.
+    #[cfg(feature = "fmt_json")]
+    Json,
 
     /// Pretty generic LaTeX support, includes a number of packages for support of listings, block
     /// quotes, images, etc.
@@ -127,6 +136,11 @@ pub fn write_document<W: Write>(
             let writer = HtmlWriter::new(w);
             writer.write_document(doc)
         }
+        #[cfg(feature = "fmt_json")]
+        OutputFormat::Json => {
+            let writer = JsonWriter::new(w);
+            writer.write_document(doc)
+        }
         #[cfg(feature = "fmt_latex")]
         OutputFormat::Latex => {
             let writer = LatexWriter::new(w);
@@ -169,6 +183,8 @@ impl Display for OutputFormat {
                 Self::Markdown(f) => f.to_string(),
                 #[cfg(feature = "fmt_html")]
                 Self::Html => "html".to_string(),
+                #[cfg(feature = "fmt_json")]
+                Self::Json => "json".to_string(),
                 #[cfg(feature = "fmt_latex")]
                 Self::Latex => "latex".to_string(),
             }
@@ -187,6 +203,8 @@ impl FromStr for OutputFormat {
             "xwiki" => Ok(Self::Markdown(MarkdownFlavor::XWiki)),
             #[cfg(feature = "fmt_html")]
             "html" => Ok(Self::Html),
+            #[cfg(feature = "fmt_json")]
+            "json" => Ok(Self::Json),
             #[cfg(feature = "fmt_latex")]
             "latex" => Ok(Self::Latex),
             _ => Err(error::ErrorKind::UnknownFormat.into()),
@@ -200,6 +218,9 @@ impl FromStr for OutputFormat {
 
 #[cfg(feature = "fmt_html")]
 pub mod html;
+
+#[cfg(feature = "fmt_json")]
+pub mod json;
 
 #[cfg(feature = "fmt_latex")]
 pub mod latex;

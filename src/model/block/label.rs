@@ -1,13 +1,6 @@
-/*!
-One-line description.
-
-More detailed description, with
-
-# Example
-
-*/
-
 use regex::Regex;
+#[cfg(feature = "fmt_json")]
+use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 use std::ops::Deref;
 use std::str::FromStr;
@@ -35,6 +28,7 @@ use std::str::FromStr;
 /// prefixes.
 ///
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub struct Label(String);
 
 ///

@@ -1,6 +1,8 @@
 use crate::error;
 use crate::model::inline::InlineContent;
 use regex::Regex;
+#[cfg(feature = "fmt_json")]
+use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 use std::ops::Deref;
 use std::str::FromStr;
@@ -13,12 +15,14 @@ use std::str::FromStr;
 /// The common name for an emoji.
 ///
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub struct Emoji(String);
 
 ///
 /// A single character, including some special ones.
 ///
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub enum Character {
     Space,
     NonBreakSpace,

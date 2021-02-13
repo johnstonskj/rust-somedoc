@@ -122,7 +122,7 @@ pub struct LatexPreamble(Vec<PreambleItem>);
 /// let doc = make_some_document();
 /// let mut out = std::io::stdout();
 /// let writer = LatexWriter::new(&mut out);
-/// assert!(walk_document(&doc, &writer).is_ok());
+/// assert!(writer.write_document(&doc).is_ok());
 /// ```
 ///
 #[derive(Debug)]
@@ -145,10 +145,10 @@ pub struct LatexWriter<'a, W: Write> {
 /// [`model::write_document`](../fn.write_document.html) or
 /// [`model::write_document_to_string`](../fn.write_document_to_string.html).
 ///
+#[inline]
 pub fn writer<W: Write>(doc: &Document, w: &mut W) -> crate::error::Result<()> {
     let writer = LatexWriter::new_with(w, LatexPreamble::default());
-    walk_document(doc, &writer)?;
-    Ok(())
+    writer.write_document(doc)
 }
 
 // ------------------------------------------------------------------------------------------------

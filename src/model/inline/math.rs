@@ -1,4 +1,6 @@
 use crate::error;
+#[cfg(feature = "fmt_json")]
+use serde::{Deserialize, Serialize};
 use std::ops::Deref;
 use std::str::FromStr;
 
@@ -10,6 +12,7 @@ use std::str::FromStr;
 /// Inline, LaTeX formatted representing a single formula.
 ///
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub struct Math(String);
 
 // ------------------------------------------------------------------------------------------------
