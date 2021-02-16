@@ -810,7 +810,9 @@ impl<'a, W: Write> TableVisitor for LatexWriter<'a, W> {
         self.end_line()?;
         self.begin_line()?;
         self.just_command("centering")?;
-        self.end_line()
+        self.end_line()?;
+        self.table_head.borrow_mut().clear();
+        Ok(())
     }
 
     fn start_table_header_row(&self) -> crate::error::Result<()> {
@@ -924,7 +926,6 @@ impl<'a, W: Write> InlineVisitor for LatexWriter<'a, W> {
                 } else {
                     self.command("ref", v)?;
                 }
-                self.command("ref", v)?;
             }
         }
         Ok(())

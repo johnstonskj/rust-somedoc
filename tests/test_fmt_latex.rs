@@ -44,7 +44,7 @@ fn test_skos() {
 
   \url{http://amazon.com/vocabulary/fashion-design#DesignScheme}
 
-  \subsection{Labels}
+  \label{Labels}\subsection{Labels}
 
   \begin{displayquote}
     \textbf{skos:prefLabel}
@@ -65,15 +65,15 @@ fn test_skos() {
     \caption{Other labels}
   \end{table}
 
-  \subsection{Other Properties}
+  \label{Other_Properties}\subsection{Other Properties}
 
   \thematicbreak
 
-  Jump to: \hyperref[Concepts Hierarchy]{Concepts Hierarchy}\ref{Concepts Hierarchy} | \hyperref[Concepts]{Concepts}\ref{Concepts} | \hyperref[Collections]{Collections}\ref{Collections} | \hyperref[Appendix - RDF]{Appendix - RDF}\ref{Appendix - RDF}
+  Jump to: \hyperref[Concepts_Hierarchy]{Concepts Hierarchy} | \hyperref[Concepts]{Concepts} | \hyperref[Collections]{Collections} | \hyperref[Appendix_-_RDF]{Appendix - RDF}
 
   \thematicbreak
 
-  \subsection{Concept Hierarchy}
+  \label{Concept_Hierarchy}\subsection{Concept Hierarchy}
 
   \begin{itemize}
     \item \textbf{First item}
@@ -84,7 +84,7 @@ fn test_skos() {
     \item First item
   \end{itemize}
 
-  \subsection{Appendix - RDF}
+  \label{Appendix_-_RDF}\subsection{Appendix - RDF}
 
   \begin{lstlisting}[language=turtle]
 @prefix foo: <...>

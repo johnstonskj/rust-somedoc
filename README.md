@@ -75,7 +75,13 @@ fn readme_maker(crate_name: &str, repo_owner: &str, repo_name: &str, headline: &
 
 ## Writers
 
-The `somedoc::write` module contains a number of serializers that generate specific markup for different platforms.
+The `somedoc::write` module contains a number of serializers that generate specific markup formats for different 
+platforms. So far, this includes HTML, LaTeX, and Markdown of different flavors.
+
+## JSON Interchange
+
+A JSON representation of the library's `Document` structure is also provided and can be read as well as written to
+allow for tool interchange.
 
 ### Example
 
@@ -106,6 +112,13 @@ println!("{}", doc_str);
 -----
 
 ## Changes
+
+**Version 0.2.4**
+
+* Fixed: bug in LaTeX writer emitting two `\ref` commands for internal references.
+* Fixed: bug in HTML writer which did not add `id` attributes for labels.
+* Fixed: bug in LaTeX writer not clearing table headings.
+* Fixed: bug in `Label::is_valid` matching spaces. 
 
 **Version 0.2.3**
 

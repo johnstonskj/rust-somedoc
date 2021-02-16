@@ -46,7 +46,7 @@ fn test_skos() {
 
 -----
 
-Jump to: [[Concepts Hierarchy>>.||anchor=HConceptsHierarchy]] | [[Concepts>>.||anchor=HConcepts]] | [[Collections>>.||anchor=HCollections]] | [[Appendix - RDF>>.||anchor=HAppendix-RDF]]
+Jump to: [[Concepts Hierarchy>>.||anchor=HConcepts_Hierarchy]] | [[Concepts>>.||anchor=HConcepts]] | [[Collections>>.||anchor=HCollections]] | [[Appendix - RDF>>.||anchor=HAppendix_-_RDF]]
 
 -----
 

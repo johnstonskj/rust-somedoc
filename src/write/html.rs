@@ -136,6 +136,20 @@ impl<'a, W: Write> HtmlWriter<'a, W> {
         Ok(())
     }
 
+    fn start_tag_labeled(
+        &self,
+        w: &mut RefMut<'_, &'a mut W>,
+        tag: &str,
+        label: &Option<Label>,
+        start_line: bool,
+    ) -> crate::error::Result<()> {
+        if let Some(label) = label {
+            self.start_tag_with(w, tag, &[("id", &label.to_string())], start_line)
+        } else {
+            self.start_tag(w, tag, start_line)
+        }
+    }
+
     fn start_tag_with(
         &self,
         w: &mut RefMut<'_, &'a mut W>,
@@ -412,14 +426,14 @@ impl<'a, W: Write> BlockVisitor for HtmlWriter<'a, W> {
     fn start_heading(
         &self,
         level: &HeadingLevel,
-        _label: &Option<Label>,
+        label: &Option<Label>,
     ) -> crate::error::Result<()> {
-        self.start_tag(
+        self.start_tag_labeled(
             &mut self.w.borrow_mut(),
             &format!("h{}", level.clone() as u8),
+            label,
             true,
-        )?;
-        Ok(())
+        )
     }
 
     fn end_heading(
@@ -438,10 +452,10 @@ impl<'a, W: Write> BlockVisitor for HtmlWriter<'a, W> {
         &self,
         value: &Image,
         _caption: &Option<Caption>,
-        _label: &Option<Label>,
+        label: &Option<Label>,
     ) -> crate::error::Result<()> {
         let mut w = self.w.borrow_mut();
-        self.start_tag(&mut w, "div", false)?;
+        self.start_tag_labeled(&mut w, "div", label, false)?;
         BlockVisitor::inline_visitor(self).unwrap().image(value)?;
         self.start_line(&mut w)?;
         self.end_tag(&mut w, "div", true)
@@ -451,26 +465,28 @@ impl<'a, W: Write> BlockVisitor for HtmlWriter<'a, W> {
         &self,
         value: &Math,
         _caption: &Option<Caption>,
-        _label: &Option<Label>,
+        label: &Option<Label>,
     ) -> crate::error::Result<()> {
         let mut w = self.w.borrow_mut();
-        self.start_line(&mut w)?;
+        self.start_tag_labeled(&mut w, "div", label, false)?;
         self.write(&mut w, &format!("\\[ {} \\]", value.inner()))?;
-        self.end_line(&mut w)
+        self.start_line(&mut w)?;
+        self.end_tag(&mut w, "div", true)
     }
 
-    fn start_list(&self, kind: &ListKind, _label: &Option<Label>) -> crate::error::Result<()> {
+    fn start_list(&self, kind: &ListKind, label: &Option<Label>) -> crate::error::Result<()> {
         let mut w = self.w.borrow_mut();
         if *self.list_level.borrow() > 0 {
             self.start_tag(&mut w, "li", true)?;
             self.indent(&mut w)?;
         }
-        self.start_tag(
+        self.start_tag_labeled(
             &mut w,
             match kind {
                 ListKind::Ordered => "ol",
                 ListKind::Unordered => "ul",
             },
+            label,
             true,
         )?;
         self.indent(&mut w)?;
@@ -499,17 +515,17 @@ impl<'a, W: Write> BlockVisitor for HtmlWriter<'a, W> {
         Ok(())
     }
 
-    fn start_list_item(&self, _label: &Option<Label>) -> crate::error::Result<()> {
-        self.start_tag(&mut self.w.borrow_mut(), "li", true)
+    fn start_list_item(&self, label: &Option<Label>) -> crate::error::Result<()> {
+        self.start_tag_labeled(&mut self.w.borrow_mut(), "li", label, true)
     }
 
     fn end_list_item(&self, _label: &Option<Label>) -> crate::error::Result<()> {
         self.end_tag(&mut self.w.borrow_mut(), "li", true)
     }
 
-    fn start_definition_list(&self, _label: &Option<Label>) -> crate::error::Result<()> {
+    fn start_definition_list(&self, label: &Option<Label>) -> crate::error::Result<()> {
         let mut w = self.w.borrow_mut();
-        self.start_tag(&mut w, "dl", true)?;
+        self.start_tag_labeled(&mut w, "dl", label, true)?;
         self.indent(&mut w)
     }
 
@@ -520,9 +536,9 @@ impl<'a, W: Write> BlockVisitor for HtmlWriter<'a, W> {
         self.end_tag(&mut w, "dl", true)
     }
 
-    fn start_definition(&self, term: &str, _label: &Option<Label>) -> crate::error::Result<()> {
+    fn start_definition(&self, term: &str, label: &Option<Label>) -> crate::error::Result<()> {
         let mut w = self.w.borrow_mut();
-        self.start_tag(&mut w, "dt", true)?;
+        self.start_tag_labeled(&mut w, "dt", label, true)?;
         self.write(&mut w, term)?;
         self.end_tag(&mut w, "dt", true)
     }
@@ -535,9 +551,9 @@ impl<'a, W: Write> BlockVisitor for HtmlWriter<'a, W> {
         self.end_tag(&mut self.w.borrow_mut(), "dd", true)
     }
 
-    fn formatted(&self, value: &str, _label: &Option<Label>) -> crate::error::Result<()> {
+    fn formatted(&self, value: &str, label: &Option<Label>) -> crate::error::Result<()> {
         let mut w = self.w.borrow_mut();
-        self.start_tag(&mut w, "pre", true)?;
+        self.start_tag_labeled(&mut w, "pre", label, true)?;
         self.write(&mut w, &format!("{}\n", value))?;
         self.start_line(&mut w)?;
         self.end_tag(&mut w, "pre", true)
@@ -548,16 +564,17 @@ impl<'a, W: Write> BlockVisitor for HtmlWriter<'a, W> {
         code: &str,
         language: &Option<String>,
         _caption: &Option<Caption>,
-        _label: &Option<Label>,
+        label: &Option<Label>,
     ) -> crate::error::Result<()> {
         let mut w = self.w.borrow_mut();
         self.start_tag(&mut w, "pre", true)?;
         self.indent(&mut w)?;
         self.start_line(&mut w)?;
         if let Some(language) = language {
+            // TODO: add label
             self.start_tag_with(&mut w, "code", &[("class", language.as_str())], false)?;
         } else {
-            self.start_tag(&mut w, "code", false)?;
+            self.start_tag_labeled(&mut w, "code", label, false)?;
         }
 
         self.write(&mut w, &format!("{}\n", code))?;
@@ -572,10 +589,10 @@ impl<'a, W: Write> BlockVisitor for HtmlWriter<'a, W> {
     fn start_paragraph(
         &self,
         _alignment: &Alignment,
-        _label: &Option<Label>,
+        label: &Option<Label>,
     ) -> crate::error::Result<()> {
         // TODO: complete the addition of styles.
-        self.start_tag(&mut self.w.borrow_mut(), "p", true)?;
+        self.start_tag_labeled(&mut self.w.borrow_mut(), "p", label, true)?;
         Ok(())
     }
 
@@ -588,9 +605,9 @@ impl<'a, W: Write> BlockVisitor for HtmlWriter<'a, W> {
         self.end_tag(&mut self.w.borrow_mut(), "p", true)
     }
 
-    fn start_quote(&self, _label: &Option<Label>) -> crate::error::Result<()> {
+    fn start_quote(&self, label: &Option<Label>) -> crate::error::Result<()> {
         let mut w = self.w.borrow_mut();
-        self.start_tag(&mut w, "blockquote", true)?;
+        self.start_tag_labeled(&mut w, "blockquote", label, true)?;
         self.indent(&mut w)
     }
 
@@ -623,10 +640,10 @@ impl<'a, W: Write> TableVisitor for HtmlWriter<'a, W> {
     fn start_table(
         &self,
         caption: &Option<Caption>,
-        _label: &Option<Label>,
+        label: &Option<Label>,
     ) -> crate::error::Result<()> {
         let mut w = self.w.borrow_mut();
-        self.start_tag(&mut w, "table", true)?;
+        self.start_tag_labeled(&mut w, "table", label, true)?;
         self.indent(&mut w)?;
         if let Some(caption) = caption {
             self.start_tag(&mut w, "caption", true)?;
@@ -668,8 +685,8 @@ impl<'a, W: Write> TableVisitor for HtmlWriter<'a, W> {
         self.start_tag(&mut w, "tr", false)
     }
 
-    fn start_table_cell(&self, _: usize, _label: &Option<Label>) -> crate::error::Result<()> {
-        self.start_tag(&mut self.w.borrow_mut(), "td", false)
+    fn start_table_cell(&self, _: usize, label: &Option<Label>) -> crate::error::Result<()> {
+        self.start_tag_labeled(&mut self.w.borrow_mut(), "td", label, false)
     }
 
     fn end_table_cell(&self, _: usize, _label: &Option<Label>) -> crate::error::Result<()> {

@@ -28,7 +28,7 @@ fn test_skos() {
 - tables -->
     <p><em>Terms commonly used to describe fashion items. It includes terms for outline, fit, elements, detailing, and patterns.</em></p>
     <p><a href="http://amazon.com/vocabulary/fashion-design#DesignScheme"></p>
-    <h2>Labels</h2>
+    <h2 id="Labels">Labels</h2>
     <blockquote>
       <p><strong>skos:prefLabel</strong></p>
       <p><strong>skos:altLabel</strong></p>
@@ -42,11 +42,11 @@ fn test_skos() {
         <tr><td>Clothing shapes, patterns, and details</td><td><strong>en</strong></td></tr>
       </tbody>
     </table>
-    <h2>Other Properties</h2>
+    <h2 id="Other_Properties">Other Properties</h2>
     <hr/>
     <p>Jump to: <a href="#Concepts_Hierarchy"> | <a href="#Concepts"> | <a href="#Collections"> | <a href="#Appendix_-_RDF"></p>
     <hr/>
-    <h2>Concept Hierarchy</h2>
+    <h2 id="Concept_Hierarchy">Concept Hierarchy</h2>
     <ul>
       <li><strong>First item</strong></li>
       <li>Second item</li>
@@ -57,7 +57,7 @@ fn test_skos() {
       </li>
       <li>First item</li>
     </ul>
-    <h2>Appendix - RDF</h2>
+    <h2 id="Appendix_-_RDF">Appendix - RDF</h2>
     <pre>
       <code class="turtle">@prefix foo: <...>
 foo:bar foo:baz 12.

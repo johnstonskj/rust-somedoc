@@ -1,3 +1,4 @@
+use somedoc::model::block::label::AutoLabel;
 use somedoc::model::block::Label;
 use somedoc::model::block::{
     Cell, CodeBlock, Column, Formatted, HasBlockContent, HasCaption, Heading, List, Paragraph,
@@ -5,7 +6,6 @@ use somedoc::model::block::{
 };
 use somedoc::model::document::Document;
 use somedoc::model::inline::{HasInlineContent, HyperLink, Span, Text};
-use std::str::FromStr;
 
 pub fn document() -> Document {
     let mut doc = Document::default();
@@ -24,7 +24,7 @@ pub fn document() -> Document {
         "http://amazon.com/vocabulary/fashion-design#DesignScheme",
     )));
 
-    doc.add_heading(Heading::sub_section("Labels"));
+    doc.add_heading(Heading::sub_section("Labels").auto_label().clone());
 
     let mut labels = Quote::default();
     labels.add_paragraph(Paragraph::bold_str("skos:prefLabel"));
@@ -39,34 +39,42 @@ pub fn document() -> Document {
     ]));
     doc.add_table(table);
 
-    doc.add_heading(Heading::sub_section("Other Properties"));
+    doc.add_heading(
+        Heading::sub_section("Other Properties")
+            .auto_label()
+            .clone(),
+    );
 
     doc.add_thematic_break();
     let mut links = Paragraph::default();
     links.add_text_str("Jump to: ");
     links.add_link(HyperLink::internal_with_caption_str(
-        Label::from_str("Concepts Hierarchy").unwrap(),
+        Label::safe_from("Concepts Hierarchy", None),
         "Concepts Hierarchy",
     ));
     links.add_text_str(" | ");
     links.add_link(HyperLink::internal_with_caption_str(
-        Label::from_str("Concepts").unwrap(),
+        Label::safe_from("Concepts", None),
         "Concepts",
     ));
     links.add_text_str(" | ");
     links.add_link(HyperLink::internal_with_caption_str(
-        Label::from_str("Collections").unwrap(),
+        Label::safe_from("Collections", None),
         "Collections",
     ));
     links.add_text_str(" | ");
     links.add_link(HyperLink::internal_with_caption_str(
-        Label::from_str("Appendix - RDF").unwrap(),
+        Label::safe_from("Appendix - RDF", None),
         "Appendix - RDF",
     ));
     doc.add_paragraph(links);
     doc.add_thematic_break();
 
-    doc.add_heading(Heading::sub_section("Concept Hierarchy"));
+    doc.add_heading(
+        Heading::sub_section("Concept Hierarchy")
+            .auto_label()
+            .clone(),
+    );
 
     let mut top_list = List::default();
     top_list.add_item_from(Span::bold_str("First item").into());
@@ -77,7 +85,7 @@ pub fn document() -> Document {
     top_list.add_item_from(Text::from("First item").into());
     doc.add_list(top_list);
 
-    doc.add_heading(Heading::sub_section("Appendix - RDF"));
+    doc.add_heading(Heading::sub_section("Appendix - RDF").auto_label().clone());
 
     doc.add_code_block(CodeBlock::with_language(
         "@prefix foo: <...>\nfoo:bar foo:baz 12.",

@@ -1,3 +1,4 @@
+use crate::model::inline::HasInlineContent;
 use regex::Regex;
 #[cfg(feature = "fmt_json")]
 use serde::{Deserialize, Serialize};
@@ -58,12 +59,49 @@ pub trait HasLabel {
     fn unset_label(&mut self) -> &mut Self;
 }
 
+///
+/// Trait for model elements that can auto-generate a label for themselves.
+///
+pub trait AutoLabel: HasLabel {
+    ///
+    /// Set the current element's label value based on other properties already set in the
+    /// model element. For example, if a value has been set for a Heading text then the auto
+    /// label will be based on it.
+    ///
+    /// Note, if no values are present to make the label from, **or** this method is not supported
+    /// by an element, no label is generated.
+    ///
+    #[allow(unused_variables)]
+    fn auto_label(&mut self) -> &mut Self;
+}
+
+impl<T> AutoLabel for T
+where
+    T: HasInlineContent + HasLabel,
+{
+    fn auto_label(&mut self) -> &mut Self {
+        self.set_label(Label::safe_from(&self.unformatted_string(), None))
+    }
+}
+
+// impl<T> AutoLabel for T
+// where
+//     T: HasCaption + HasLabel,
+// {
+//     fn auto_label(&mut self) -> &mut Self {
+//         if let Some(caption) = self.caption() {
+//             self.set_label(Label::safe_from(&caption.to_string(), None))
+//         }
+//         self
+//     }
+// }
+
 // ------------------------------------------------------------------------------------------------
 // Implementations
 // ------------------------------------------------------------------------------------------------
 
 lazy_static! {
-    static ref RE_LABEL: Regex = Regex::new(r"\p{L}+[\p{L}\p{N}_\-\.:]*").unwrap();
+    static ref RE_LABEL: Regex = Regex::new(r"^\p{L}+[\p{L}\p{N}_\-\.:]*$").unwrap();
 }
 
 impl Display for Label {
@@ -156,7 +194,6 @@ impl Label {
 #[cfg(test)]
 mod tests {
     use super::*;
-
     #[test]
     fn test_generated_labels() {
         for _ in 0..100 {
@@ -191,6 +228,7 @@ mod tests {
     fn test_is_not_valid() {
         assert!(!Label::is_valid(""));
         assert!(!Label::is_valid("1"));
+        assert!(!Label::is_valid(" "));
         assert!(!Label::is_valid("_"));
         assert!(!Label::is_valid("-"));
         assert!(!Label::is_valid("."));
@@ -199,5 +237,6 @@ mod tests {
         assert!(Label::is_valid("a-"));
         assert!(Label::is_valid("a."));
         assert!(Label::is_valid("a:"));
+        assert!(!Label::is_valid("a a"));
     }
 }

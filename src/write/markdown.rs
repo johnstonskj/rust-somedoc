@@ -227,6 +227,33 @@ impl<'a, W: Write> MarkdownWriter<'a, W> {
         Ok(())
     }
 
+    fn write_label_before(&self, label: &Option<Label>) -> crate::error::Result<()> {
+        if let Some(label) = label {
+            match self.flavor {
+                MarkdownFlavor::Multi => {
+                    self.write(&format!("[{}] ", label.to_string()))?;
+                }
+                MarkdownFlavor::XWiki => {
+                    self.write(&format!("(% id=\"{}\" %) ", label.to_string()))?;
+                }
+                _ => {}
+            }
+        }
+        Ok(())
+    }
+
+    fn write_label_after(&self, label: &Option<Label>) -> crate::error::Result<()> {
+        if let Some(label) = label {
+            match self.flavor {
+                MarkdownFlavor::PhpExtra => {
+                    self.write(&format!(" {{#{}}}", label.to_string()))?;
+                }
+                _ => {}
+            }
+        }
+        Ok(())
+    }
+
     fn write(&self, text: &str) -> crate::error::Result<()> {
         if self.line_prefix_stack.borrow().is_empty() || !text.contains('\n') {
             // if no prefix stack just let `write!` handle newline processing.
@@ -395,8 +422,9 @@ impl<'a, W: Write> BlockVisitor for MarkdownWriter<'a, W> {
     fn start_heading(
         &self,
         level: &HeadingLevel,
-        _label: &Option<Label>,
+        label: &Option<Label>,
     ) -> crate::error::Result<()> {
+        self.write_label_before(label)?;
         self.write(&format!(
             "{} ",
             string_of_strings(
@@ -410,11 +438,7 @@ impl<'a, W: Write> BlockVisitor for MarkdownWriter<'a, W> {
         ))
     }
 
-    fn end_heading(
-        &self,
-        level: &HeadingLevel,
-        _label: &Option<Label>,
-    ) -> crate::error::Result<()> {
+    fn end_heading(&self, level: &HeadingLevel, label: &Option<Label>) -> crate::error::Result<()> {
         if self.flavor == MarkdownFlavor::XWiki {
             let mut s = String::new();
             for _ in 0..level.clone() as usize {
@@ -422,6 +446,7 @@ impl<'a, W: Write> BlockVisitor for MarkdownWriter<'a, W> {
             }
             self.write(&format!(" {}", s))?;
         }
+        self.write_label_after(label)?;
         Ok(())
     }
 
@@ -429,12 +454,14 @@ impl<'a, W: Write> BlockVisitor for MarkdownWriter<'a, W> {
         &self,
         value: &Image,
         _caption: &Option<Caption>,
-        _label: &Option<Label>,
+        label: &Option<Label>,
     ) -> crate::error::Result<()> {
         if let Some(inline_visitor) = BlockVisitor::inline_visitor(self) {
             self.end_line()?;
             self.start_line()?;
+            self.write_label_before(label)?;
             inline_visitor.image(value)?;
+            self.write_label_after(label)?;
         }
         Ok(())
     }
@@ -443,27 +470,32 @@ impl<'a, W: Write> BlockVisitor for MarkdownWriter<'a, W> {
         &self,
         value: &Math,
         _caption: &Option<Caption>,
-        _label: &Option<Label>,
+        label: &Option<Label>,
     ) -> crate::error::Result<()> {
         if let Some(inline_visitor) = BlockVisitor::inline_visitor(self) {
             self.end_line()?;
             self.start_line()?;
+            self.write_label_before(label)?;
             inline_visitor.math(value)?;
+            self.write_label_after(label)?;
         }
         Ok(())
     }
 
-    fn start_list(&self, kind: &ListKind, _label: &Option<Label>) -> crate::error::Result<()> {
+    fn start_list(&self, kind: &ListKind, label: &Option<Label>) -> crate::error::Result<()> {
+        self.write_label_before(label)?;
         self.list_prefix_stack.borrow_mut().push(kind.clone());
         Ok(())
     }
 
-    fn end_list(&self, _: &ListKind, _label: &Option<Label>) -> crate::error::Result<()> {
+    fn end_list(&self, _: &ListKind, label: &Option<Label>) -> crate::error::Result<()> {
         let _ = self.list_prefix_stack.borrow_mut().pop();
+        self.write_label_after(label)?;
         Ok(())
     }
 
-    fn start_list_item(&self, _label: &Option<Label>) -> crate::error::Result<()> {
+    fn start_list_item(&self, label: &Option<Label>) -> crate::error::Result<()> {
+        self.write_label_before(label)?;
         let list_stack = self.list_prefix_stack.borrow();
         if !list_stack.is_empty() {
             let length = if self.flavor == MarkdownFlavor::XWiki {
@@ -500,22 +532,27 @@ impl<'a, W: Write> BlockVisitor for MarkdownWriter<'a, W> {
         Ok(())
     }
 
-    fn end_list_item(&self, _label: &Option<Label>) -> crate::error::Result<()> {
+    fn end_list_item(&self, label: &Option<Label>) -> crate::error::Result<()> {
+        self.write_label_after(label)?;
         self.end_line()
     }
 
-    fn start_definition(&self, term: &str, _label: &Option<Label>) -> crate::error::Result<()> {
+    fn start_definition(&self, term: &str, label: &Option<Label>) -> crate::error::Result<()> {
         match self.flavor {
             MarkdownFlavor::Multi | MarkdownFlavor::PhpExtra => {
                 // Do nothing
             }
             MarkdownFlavor::XWiki => {
+                self.write_label_before(label)?;
                 self.write(&format!("; {}", term))?;
+                self.write_label_after(label)?;
                 self.end_line()?;
                 self.start_line()?;
             }
             _ => {
+                self.write_label_before(label)?;
                 self.write(&format!("**{}**:- ", term))?;
+                self.write_label_after(label)?;
             }
         }
         Ok(())
@@ -531,7 +568,8 @@ impl<'a, W: Write> BlockVisitor for MarkdownWriter<'a, W> {
         Ok(())
     }
 
-    fn formatted(&self, value: &str, _label: &Option<Label>) -> crate::error::Result<()> {
+    fn formatted(&self, value: &str, label: &Option<Label>) -> crate::error::Result<()> {
+        self.write_label_before(label)?;
         match self.flavor {
             MarkdownFlavor::Strict
             | MarkdownFlavor::CommonMark
@@ -546,7 +584,7 @@ impl<'a, W: Write> BlockVisitor for MarkdownWriter<'a, W> {
                 self.write(&format!("{{{{{{\n{}\n}}}}}}", value))?;
             }
         }
-        Ok(())
+        self.write_label_after(label)
     }
 
     fn code_block(
@@ -554,8 +592,9 @@ impl<'a, W: Write> BlockVisitor for MarkdownWriter<'a, W> {
         code: &str,
         language: &Option<String>,
         _caption: &Option<Caption>,
-        _label: &Option<Label>,
+        label: &Option<Label>,
     ) -> crate::error::Result<()> {
+        self.write_label_before(label)?;
         match self.flavor {
             MarkdownFlavor::Strict => {
                 self.line_prefix_stack.borrow_mut().push("    ".to_string());
@@ -583,11 +622,12 @@ impl<'a, W: Write> BlockVisitor for MarkdownWriter<'a, W> {
                 }
             }
         }
-        Ok(())
+        self.write_label_after(label)
     }
 
-    fn start_quote(&self, _label: &Option<Label>) -> crate::error::Result<()> {
+    fn start_quote(&self, label: &Option<Label>) -> crate::error::Result<()> {
         self.debug(DebugMark::SOQ)?;
+        self.write_label_before(label)?;
         let mut line_prefix_stack = self.line_prefix_stack.borrow_mut();
         if self.flavor == MarkdownFlavor::XWiki {
             if line_prefix_stack.is_empty() {
@@ -601,10 +641,10 @@ impl<'a, W: Write> BlockVisitor for MarkdownWriter<'a, W> {
         Ok(())
     }
 
-    fn end_quote(&self, _label: &Option<Label>) -> crate::error::Result<()> {
+    fn end_quote(&self, label: &Option<Label>) -> crate::error::Result<()> {
         self.debug(DebugMark::EOQ)?;
         let _ = self.line_prefix_stack.borrow_mut().pop();
-        Ok(())
+        self.write_label_after(label)
     }
 
     fn thematic_break(&self) -> crate::error::Result<()> {
@@ -636,8 +676,9 @@ impl<'a, W: Write> TableVisitor for MarkdownWriter<'a, W> {
     fn start_table(
         &self,
         _caption: &Option<Caption>,
-        _label: &Option<Label>,
+        label: &Option<Label>,
     ) -> crate::error::Result<()> {
+        self.write_label_before(label)?;
         Ok(())
     }
 
@@ -687,12 +728,13 @@ impl<'a, W: Write> TableVisitor for MarkdownWriter<'a, W> {
         Ok(())
     }
 
-    fn start_table_cell(&self, _: usize, _label: &Option<Label>) -> crate::error::Result<()> {
+    fn start_table_cell(&self, _: usize, label: &Option<Label>) -> crate::error::Result<()> {
+        self.write_label_before(label)?;
         self.write("|")
     }
 
-    fn end_table_cell(&self, _: usize, _label: &Option<Label>) -> crate::error::Result<()> {
-        Ok(())
+    fn end_table_cell(&self, _: usize, label: &Option<Label>) -> crate::error::Result<()> {
+        self.write_label_after(label)
     }
 
     fn end_table_row(&self, _: usize) -> crate::error::Result<()> {

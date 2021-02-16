@@ -32,7 +32,7 @@ TODO:
 
 [[http://amazon.com/vocabulary/fashion-design#DesignScheme]]
 
-== Labels ==
+(% id="Labels" %) == Labels ==
 
 
 > **skos:prefLabel**
@@ -44,15 +44,15 @@ TODO:
 |Clothing shapes, patterns, and details|**en**|
 
 
-== Other Properties ==
+(% id="Other_Properties" %) == Other Properties ==
 
 -----
 
-Jump to: [[Concepts Hierarchy>>.||anchor=HConceptsHierarchy]] | [[Concepts>>.||anchor=HConcepts]] | [[Collections>>.||anchor=HCollections]] | [[Appendix - RDF>>.||anchor=HAppendix-RDF]]
+Jump to: [[Concepts Hierarchy>>.||anchor=HConcepts_Hierarchy]] | [[Concepts>>.||anchor=HConcepts]] | [[Collections>>.||anchor=HCollections]] | [[Appendix - RDF>>.||anchor=HAppendix_-_RDF]]
 
 -----
 
-== Concept Hierarchy ==
+(% id="Concept_Hierarchy" %) == Concept Hierarchy ==
 
 * **First item**
 * Second item
@@ -60,7 +60,7 @@ Jump to: [[Concepts Hierarchy>>.||anchor=HConceptsHierarchy]] | [[Concepts>>.||a
 * First item
 
 
-== Appendix - RDF ==
+(% id="Appendix_-_RDF" %) == Appendix - RDF ==
 
 {{code language="turtle"}}
 @prefix foo: <...>
