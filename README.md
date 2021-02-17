@@ -113,6 +113,18 @@ println!("{}", doc_str);
 
 ## Changes
 
+**Version 0.2.5**
+
+* Testing: added tests for labels, paragraph alignment, images, math, block quotes, and some text styles.
+* Testing: added tests for remaining markdown flavors.
+* Added: missing `math` and `add_math` functions for `HasBlockContent` trait.
+* Added: new preamble elements to correctly layout and caption equations.
+* Added: new `FrontMatter` enum for generated tables of content.
+* Added: new helper functions to `Span`.
+* Fixed: LaTeX writer had incorrect indentation for image blocks.
+* Fixed: HTML writer had incorrect indentation for image and math blocks.
+* Fixed: markdown writer swapping the markdown/xwiki format for block quotes.
+
 **Version 0.2.4**
 
 * Fixed: bug in LaTeX writer emitting two `\ref` commands for internal references.

@@ -5,17 +5,15 @@ pub mod common;
 
 #[inline]
 fn assert_markdown_eq(part_fn: impl Fn() -> Document, expected: &str) {
-    common::assert_serialized_eq(&part_fn(), MarkdownFlavor::GitHub.into(), expected)
+    common::assert_serialized_eq(&part_fn(), MarkdownFlavor::PhpExtra.into(), expected)
 }
 
 #[test]
 fn test_skos() {
     assert_markdown_eq(
         common::skos::document,
-        r###"---
-[_metadata_:title]:- "Scheme: Clothing shapes, patterns, and details"
+        r###"[_metadata_:title]:- "Scheme: Clothing shapes, patterns, and details"
 [_metadata_:author]:- "Simon"
----
 
 
 # Scheme: Clothing shapes, patterns, and details
@@ -29,7 +27,7 @@ fn test_skos() {
 
 [[http://amazon.com/vocabulary/fashion-design#DesignScheme]]
 
-## Labels
+## Labels {#Labels}
 
 
 > **skos:prefLabel**
@@ -42,7 +40,7 @@ fn test_skos() {
 |Clothing shapes, patterns, and details|**en**|
 
 
-## Other Properties
+## Other Properties {#Other_Properties}
 
 -----
 
@@ -50,7 +48,7 @@ Jump to: [[Concepts Hierarchy>>.||anchor=HConcepts_Hierarchy]] | [[Concepts>>.||
 
 -----
 
-## Concept Hierarchy
+## Concept Hierarchy {#Concept_Hierarchy}
 
 * **First item**
 * Second item
@@ -58,9 +56,9 @@ Jump to: [[Concepts Hierarchy>>.||anchor=HConcepts_Hierarchy]] | [[Concepts>>.||
 * First item
 
 
-## Appendix - RDF
+## Appendix - RDF {#Appendix_-_RDF}
 
-```turtle
+``` .turtle
 @prefix foo: <...>
 foo:bar foo:baz 12.
 ```
@@ -83,9 +81,7 @@ fn test_empty_document() {
 fn test_document_with_title() {
     assert_markdown_eq(
         common::parts::document_with_title,
-        r###"---
-[_metadata_:title]:- "Test Document"
----
+        r###"[_metadata_:title]:- "Test Document"
 
 "###,
     );
@@ -106,7 +102,7 @@ fn test_document_with_labeled_heading() {
     assert_markdown_eq(
         common::parts::document_with_labeled_heading,
         r###"
-# Test Document
+# Test Document {#Test_Document}
 "###,
     );
 }
@@ -261,7 +257,8 @@ fn test_definition_list() {
     assert_markdown_eq(
         common::parts::definition_list,
         r###"
-**Universe**:- Big, really big
+Universe
+: Big, really big
 "###,
     );
 }
@@ -283,7 +280,7 @@ fn test_image_block_with_label_and_caption() {
         common::parts::image_block_with_label_and_caption,
         r###"
 
-![[https://example.org/example.png]]
+![[https://example.org/example.png]] {#img:example}
 "###,
     );
 }
@@ -341,7 +338,7 @@ fn test_text_styles() {
     assert_markdown_eq(
         common::parts::text_styles,
         r###"
-Here is some plain **bold** *italic* `mono` `code` plain ~~strikethrough~~ underline small caps superscript subscript text.
+Here is some plain **bold** *italic* `mono` `code` plain strikethrough underline small caps superscript subscript text.
 "###,
     );
 }

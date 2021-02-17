@@ -454,11 +454,9 @@ impl<'a, W: Write> BlockVisitor for HtmlWriter<'a, W> {
         _caption: &Option<Caption>,
         label: &Option<Label>,
     ) -> crate::error::Result<()> {
-        let mut w = self.w.borrow_mut();
-        self.start_tag_labeled(&mut w, "div", label, false)?;
+        self.start_tag_labeled(&mut self.w.borrow_mut(), "div", label, true)?;
         BlockVisitor::inline_visitor(self).unwrap().image(value)?;
-        self.start_line(&mut w)?;
-        self.end_tag(&mut w, "div", true)
+        self.end_tag(&mut self.w.borrow_mut(), "div", true)
     }
 
     fn math(
@@ -468,9 +466,8 @@ impl<'a, W: Write> BlockVisitor for HtmlWriter<'a, W> {
         label: &Option<Label>,
     ) -> crate::error::Result<()> {
         let mut w = self.w.borrow_mut();
-        self.start_tag_labeled(&mut w, "div", label, false)?;
+        self.start_tag_labeled(&mut w, "div", label, true)?;
         self.write(&mut w, &format!("\\[ {} \\]", value.inner()))?;
-        self.start_line(&mut w)?;
         self.end_tag(&mut w, "div", true)
     }
 

@@ -19,8 +19,8 @@ pub fn writer<W: Write>(doc: &Document, w: &mut W) -> crate::error::Result<()> {
 */
 
 use crate::model::block::{
-    Alignment, BlockContent, Caption, Column, DefinitionList, HasAlignment, HasCaption,
-    HeadingLevel, Label, List, ListItem, ListKind, Table,
+    Alignment, BlockContent, Caption, Column, DefinitionList, FrontMatter, HasAlignment,
+    HasCaption, HeadingLevel, Label, List, ListItem, ListKind, Table,
 };
 use crate::model::document::Metadata;
 use crate::model::inline::{Character, HyperLink, Image, InlineContent, Math, SpanStyle, Text};
@@ -91,6 +91,11 @@ pub trait BlockVisitor {
 
     /// Visit each `BlockContent::Comment` instance.
     fn comment(&self, value: &str) -> crate::error::Result<()> {
+        Ok(())
+    }
+
+    /// Visit each `BlockContent::FrontMatter` instance.
+    fn front_matter(&self, value: &FrontMatter) -> crate::error::Result<()> {
         Ok(())
     }
 
@@ -417,6 +422,7 @@ fn walk_block(block: &BlockContent, visitor: &dyn BlockVisitor) -> crate::error:
     visitor.start_block()?;
     match block {
         BlockContent::Comment(v) => visitor.comment(v)?,
+        BlockContent::FrontMatter(v) => visitor.front_matter(v)?,
         BlockContent::Heading(v) => {
             visitor.start_heading(v.level(), v.label())?;
             if let Some(inline_visitor) = visitor.inline_visitor() {

@@ -5,7 +5,6 @@ stands on it's own such as a complete paragraph.
 
 // TODO: potentially add TOC, glossary, etc.
 
-use crate::model::inline::Image;
 use crate::model::HasInnerContent;
 #[cfg(feature = "fmt_json")]
 use serde::{Deserialize, Serialize};
@@ -22,6 +21,8 @@ use serde::{Deserialize, Serialize};
 pub enum BlockContent {
     /// A comment; this may be written into markup but not included in a rendered version.
     Comment(String),
+    /// Generated lists of content.
+    FrontMatter(FrontMatter),
     /// A section heading.
     Heading(Heading),
     /// A block containing an image only.
@@ -67,6 +68,13 @@ pub trait HasBlockContent: Default + HasInnerContent<BlockContent> {
         new_self
     }
 
+    /// Create a new block content container from the provided `FrontMatter` content item.
+    fn front_matter(matter: FrontMatter) -> Self {
+        let mut new_self = Self::default();
+        let _ = new_self.add_front_matter(matter);
+        new_self
+    }
+
     /// Create a new block content container from the provided `Heading` content item.
     fn heading(inner: Heading) -> Self {
         let mut new_self = Self::default();
@@ -74,10 +82,17 @@ pub trait HasBlockContent: Default + HasInnerContent<BlockContent> {
         new_self
     }
 
-    /// Create a new block content container from the provided `Image` content item.
-    fn image(inner: Image) -> Self {
+    /// Create a new block content container from the provided `ImageBlock` content item.
+    fn image(inner: ImageBlock) -> Self {
         let mut new_self = Self::default();
         let _ = new_self.add_image(inner);
+        new_self
+    }
+
+    /// Create a new block content container from the provided `MathBlock` content item.
+    fn math(inner: MathBlock) -> Self {
+        let mut new_self = Self::default();
+        let _ = new_self.add_math(inner);
         new_self
     }
 
@@ -146,14 +161,26 @@ pub trait HasBlockContent: Default + HasInnerContent<BlockContent> {
         self
     }
 
+    /// Add the provided `FrontMatter` to this container's inner content.
+    fn add_front_matter(&mut self, matter: FrontMatter) -> &mut Self {
+        self.add_content(BlockContent::FrontMatter(matter)).unwrap();
+        self
+    }
+
     /// Add the provided `Heading` to this container's inner content.
     fn add_heading(&mut self, inner: Heading) -> &mut Self {
         self.add_content(inner.into()).unwrap();
         self
     }
 
-    /// Add the provided `Image` to this container's inner content.
-    fn add_image(&mut self, inner: Image) -> &mut Self {
+    /// Add the provided `ImageBlock` to this container's inner content.
+    fn add_image(&mut self, inner: ImageBlock) -> &mut Self {
+        self.add_content(inner.into()).unwrap();
+        self
+    }
+
+    /// Add the provided `MathBlock` to this container's inner content.
+    fn add_math(&mut self, inner: MathBlock) -> &mut Self {
         self.add_content(inner.into()).unwrap();
         self
     }
@@ -222,6 +249,10 @@ pub use caption::{Caption, HasCaption};
 #[doc(hidden)]
 pub mod code;
 pub use code::{CodeBlock, Formatted};
+
+#[doc(hidden)]
+pub mod front_matter;
+pub use front_matter::FrontMatter;
 
 #[doc(hidden)]
 pub mod heading;

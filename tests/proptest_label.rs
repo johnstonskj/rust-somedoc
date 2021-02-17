@@ -45,6 +45,52 @@ fn test_to_ref() {
     assert_eq!(link.target(), &HyperLinkTarget::Internal(anchor));
 }
 
+#[test]
+fn test_generated_labels() {
+    for _ in 0..100 {
+        let label = Label::generate(None);
+        assert!(label.starts_with("gen:"));
+        assert!(label.len() > 5);
+        assert!(Label::is_valid(&label.to_string()))
+    }
+}
+
+#[test]
+fn test_generated_prefixed_labels() {
+    for _ in 0..100 {
+        let label = Label::generate(Some("test"));
+        assert!(label.starts_with("test:"));
+        assert!(label.len() > 6);
+        assert!(Label::is_valid(&label.to_string()))
+    }
+}
+
+#[test]
+fn test_is_valid() {
+    assert!(Label::is_valid("a"));
+    assert!(Label::is_valid("a1"));
+    assert!(Label::is_valid("a_1"));
+    assert!(Label::is_valid("a-1"));
+    assert!(Label::is_valid("a.1"));
+    assert!(Label::is_valid("a:1"));
+}
+
+#[test]
+fn test_is_not_valid() {
+    assert!(!Label::is_valid(""));
+    assert!(!Label::is_valid("1"));
+    assert!(!Label::is_valid(" "));
+    assert!(!Label::is_valid("_"));
+    assert!(!Label::is_valid("-"));
+    assert!(!Label::is_valid("."));
+    assert!(!Label::is_valid(":"));
+    assert!(Label::is_valid("a_"));
+    assert!(Label::is_valid("a-"));
+    assert!(Label::is_valid("a."));
+    assert!(Label::is_valid("a:"));
+    assert!(!Label::is_valid("a a"));
+}
+
 // ------------------------------------------------------------------------------------------------
 // Automated Property Tests
 // ------------------------------------------------------------------------------------------------

@@ -125,6 +125,18 @@ pub trait HasInlineContent: Default + HasInnerContent<InlineContent> {
         self
     }
 
+    /// Add a single space to this container's inner content.
+    fn add_space(&mut self) -> &mut Self {
+        self.add_content(Character::Space.into()).unwrap();
+        self
+    }
+
+    /// Add a single non-breaking space to this container's inner content.
+    fn add_non_breaking_space(&mut self) -> &mut Self {
+        self.add_content(Character::NonBreakSpace.into()).unwrap();
+        self
+    }
+
     /// Add a `LineBreak` to this container's inner content.
     fn add_line_break(&mut self) -> &mut Self {
         self.add_content(InlineContent::LineBreak).unwrap();

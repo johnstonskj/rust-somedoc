@@ -6,11 +6,14 @@ pub mod common;
 const COMMON_PREAMBLE: &str = r###"\documentclass[twoside, 12pt, lettersize]{article}
 
 \usepackage{amsmath}
+\usepackage{caption}
 \usepackage{csquotes}
 \usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage{listings}
+\usepackage{ulem}
 \newcommand{\thematicbreak}{\par\bigskip\noindent\hrulefill\par\bigskip}
+\DeclareCaptionType{equfloat}[Equation][List of equations]
 
 "###;
 
@@ -145,6 +148,21 @@ fn test_document_with_heading() {
 }
 
 #[test]
+fn test_document_with_labeled_heading() {
+    assert_latex_eq(
+        common::parts::document_with_labeled_heading,
+        r###"\begin{document}
+
+  \maketitle
+
+  \label{Test_Document}\section{Test Document}
+
+\end{document}"###,
+        None,
+    );
+}
+
+#[test]
 fn test_document_with_headings() {
     assert_latex_eq(
         common::parts::document_with_headings,
@@ -165,6 +183,54 @@ fn test_document_with_headings() {
   \subsubsubsubsubsection{Sub-sub-sub-sub-sub-section}
 
   \subsubsubsubsubsubsection{Sub-sub-sub-sub-sub-sub-section}
+
+\end{document}"###,
+        None,
+    );
+}
+
+#[test]
+fn test_paragraph_alignment() {
+    assert_latex_eq(
+        common::parts::paragraph_alignment,
+        r###"\begin{document}
+
+  \maketitle
+
+  left-aligned
+
+  right-aligned
+
+  center-aligned
+
+  both-aligned
+
+\end{document}"###,
+        None,
+    );
+}
+
+#[test]
+fn test_document_with_front_matter() {
+    assert_latex_eq(
+        common::parts::document_with_front_matter,
+        r###"\begin{document}
+
+  \maketitle
+
+  \tableofcontents
+
+  \listoffigures
+
+  \listoftables
+
+  \listofequfloats
+
+  \lstlistoflistings
+
+  \section{Section One}
+
+  \section{Section Two}
 
 \end{document}"###,
         None,
@@ -202,6 +268,25 @@ fn test_ordered_list() {
     \item one
     \item two
     \item three
+  \end{enumerate}
+
+\end{document}"###,
+        None,
+    );
+}
+
+#[test]
+fn test_labeled_ordered_list() {
+    assert_latex_eq(
+        common::parts::labeled_ordered_list,
+        r###"\begin{document}
+
+  \maketitle
+
+  \label{lst1}\begin{enumerate}
+    \item\label{lst1-itm1} one
+    \item\label{lst1-itm2} two
+    \item\label{lst1-itm3} three
   \end{enumerate}
 
 \end{document}"###,
@@ -292,6 +377,159 @@ fn test_definition_list() {
   \begin{description}
     \item [Universe] Big, really big
   \end{description}
+
+\end{document}"###,
+        None,
+    );
+}
+
+#[test]
+fn test_image_block() {
+    assert_latex_eq(
+        common::parts::image_block,
+        r###"\begin{document}
+
+  \maketitle
+
+  \begin{figure}[h!bt]
+    \centering
+    \includegraphics{https://example.org/example.png}
+  \end{figure}
+
+\end{document}"###,
+        None,
+    );
+}
+
+#[test]
+fn test_image_block_with_label_and_caption() {
+    assert_latex_eq(
+        common::parts::image_block_with_label_and_caption,
+        r###"\begin{document}
+
+  \maketitle
+
+  \begin{figure}[h!bt]
+    \centering
+    \includegraphics{https://example.org/example.png}
+    \caption{An Example Image}
+    \label{img:example}
+  \end{figure}
+
+\end{document}"###,
+        None,
+    );
+}
+
+#[test]
+fn test_math_block() {
+    assert_latex_eq(
+        common::parts::math_block,
+        r###"\begin{document}
+
+  \maketitle
+
+  \begin{equfloat}[h!bt]
+    \begin{equation}
+      x=2+2^2
+    \end{equation}
+  \end{equfloat}
+
+\end{document}"###,
+        None,
+    );
+}
+
+#[test]
+fn test_math_block_with_label_and_caption() {
+    assert_latex_eq(
+        common::parts::math_block_with_label_and_caption,
+        r###"\begin{document}
+
+  \maketitle
+
+  \begin{equfloat}[h!bt]
+    \begin{equation}
+      x=2+2^2
+    \end{equation}
+    \caption{Example Math}
+    \label{math:example}
+  \end{equfloat}
+
+\end{document}"###,
+        None,
+    );
+}
+
+#[test]
+fn test_block_quote() {
+    assert_latex_eq(
+        common::parts::block_quote,
+        r###"\begin{document}
+
+  \maketitle
+
+  \begin{displayquote}
+    a block quote
+
+  \end{displayquote}
+
+\end{document}"###,
+        None,
+    );
+}
+
+#[test]
+fn test_nested_block_quotes() {
+    assert_latex_eq(
+        common::parts::nested_block_quotes,
+        r###"\begin{document}
+
+  \maketitle
+
+  \begin{displayquote}
+    a block quote
+
+    \begin{displayquote}
+      another block quote
+
+    \end{displayquote}
+
+  \end{displayquote}
+
+\end{document}"###,
+        None,
+    );
+}
+
+#[test]
+fn test_text_styles() {
+    assert_latex_eq(
+        common::parts::text_styles,
+        r###"\begin{document}
+
+  \maketitle
+
+  Here is some plain \textbf{bold} \textit{italic} \texttt{mono} \texttt{code} plain \sout{strikethrough} \underline{underline} \textsc{small caps} \textsuperscript{superscript} \textsubscript{subscript} text.
+
+\end{document}"###,
+        None,
+    );
+}
+
+#[test]
+fn test_nested_text_styles() {
+    assert_latex_eq(
+        common::parts::nested_text_styles,
+        r###"\begin{document}
+
+  \maketitle
+
+  Here is some \textbf{\textit{bold italic}} text.
+
+  Here is some bold italic plain text.
+
+  Here is some \textit{bold plain italic} text.
 
 \end{document}"###,
         None,

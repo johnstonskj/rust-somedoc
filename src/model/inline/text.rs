@@ -148,12 +148,27 @@ impl Span {
             styles: vec![style],
         }
     }
+    /// Create a new span, with the provided styles, that includes a `Text` instance.
+    pub fn with_styles(inner: &str, styles: Vec<SpanStyle>) -> Self {
+        Self {
+            inner: vec![Text::from(inner).into()],
+            styles,
+        }
+    }
 
     /// Create a new span, with the provided style, that includes a `InlineContent` instance.
     pub fn inner_with_style(inner: InlineContent, style: SpanStyle) -> Self {
         Self {
             inner: vec![inner],
             styles: vec![style],
+        }
+    }
+
+    /// Create a new span, with the provided style, that includes a `InlineContent` instance.
+    pub fn inner_with_styles(inner: InlineContent, styles: Vec<SpanStyle>) -> Self {
+        Self {
+            inner: vec![inner],
+            styles,
         }
     }
 

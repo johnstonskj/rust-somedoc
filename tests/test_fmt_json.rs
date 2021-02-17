@@ -41,10 +41,26 @@ fn test_document_with_heading() {
 }
 
 #[test]
+fn test_document_with_labeled_heading() {
+    assert_json_eq(
+        common::parts::document_with_labeled_heading,
+        r###""content":[{"Heading":{"label":"Test_Document","level":"Section","inner":[{"Text":"Test Document"}]}}]}"###,
+    );
+}
+
+#[test]
 fn test_document_with_headings() {
     assert_json_eq(
         common::parts::document_with_headings,
         r###""content":[{"Heading":{"level":"Section","inner":[{"Text":"Section"}]}},{"Heading":{"level":"SubSection","inner":[{"Text":"Sub-section"}]}},{"Heading":{"level":"SubSubSection","inner":[{"Text":"Sub-sub-section"}]}},{"Heading":{"level":"SubSubSubSection","inner":[{"Text":"Sub-sub-sub-section"}]}},{"Heading":{"level":"SubSubSubSubSection","inner":[{"Text":"Sub-sub-sub-sub-section"}]}},{"Heading":{"level":"SubSubSubSubSubSection","inner":[{"Text":"Sub-sub-sub-sub-sub-section"}]}},{"Heading":{"level":"SubSubSubSubSubSubSection","inner":[{"Text":"Sub-sub-sub-sub-sub-sub-section"}]}}]}"###,
+    );
+}
+
+#[test]
+fn test_paragraph_alignment() {
+    assert_json_eq(
+        common::parts::paragraph_alignment,
+        r###""content":[{"Paragraph":{"inner":[{"Text":"left-aligned"}],"alignment":"Left"}},{"Paragraph":{"inner":[{"Text":"right-aligned"}],"alignment":"Right"}},{"Paragraph":{"inner":[{"Text":"center-aligned"}],"alignment":"Centered"}},{"Paragraph":{"inner":[{"Text":"both-aligned"}],"alignment":"Justified"}}]}"###,
     );
 }
 
@@ -61,6 +77,14 @@ fn test_ordered_list() {
     assert_json_eq(
         common::parts::ordered_list,
         r###""content":[{"List":{"kind":"Ordered","inner":[{"Item":{"inner":[{"Span":{"inner":[{"Text":"one"}],"styles":["Plain"]}}]}},{"Item":{"inner":[{"Span":{"inner":[{"Text":"two"}],"styles":["Plain"]}}]}},{"Item":{"inner":[{"Span":{"inner":[{"Text":"three"}],"styles":["Plain"]}}]}}]}}]}"###,
+    );
+}
+
+#[test]
+fn test_labeled_ordered_list() {
+    assert_json_eq(
+        common::parts::labeled_ordered_list,
+        r###""content":[{"List":{"label":"lst1","kind":"Ordered","inner":[{"Item":{"label":"lst1-itm1","inner":[{"Span":{"inner":[{"Text":"one"}],"styles":["Plain"]}}]}},{"Item":{"label":"lst1-itm2","inner":[{"Span":{"inner":[{"Text":"two"}],"styles":["Plain"]}}]}},{"Item":{"label":"lst1-itm3","inner":[{"Span":{"inner":[{"Text":"three"}],"styles":["Plain"]}}]}}]}}]}"###,
     );
 }
 

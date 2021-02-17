@@ -103,6 +103,16 @@ fn test_document_with_heading() {
 }
 
 #[test]
+fn test_document_with_labeled_heading() {
+    assert_markdown_eq(
+        common::parts::document_with_labeled_heading,
+        r###"
+(% id="Test_Document" %) = Test Document =
+"###,
+    );
+}
+
+#[test]
 fn test_document_with_headings() {
     assert_markdown_eq(
         common::parts::document_with_headings,
@@ -125,11 +135,63 @@ fn test_document_with_headings() {
 }
 
 #[test]
+fn test_document_with_front_matter() {
+    assert_markdown_eq(
+        common::parts::document_with_front_matter,
+        r###"
+{{toc/}}
+
+
+
+
+
+
+
+
+
+
+= Section One =
+
+= Section Two =
+"###,
+    );
+}
+
+#[test]
+fn test_paragraph_alignment() {
+    assert_markdown_eq(
+        common::parts::paragraph_alignment,
+        r###"
+left-aligned
+
+right-aligned
+
+center-aligned
+
+both-aligned
+"###,
+    );
+}
+
+#[test]
 fn test_ordered_list() {
     assert_markdown_eq(
         common::parts::ordered_list,
         r###"
 1. one
+1. two
+1. three
+
+"###,
+    );
+}
+
+#[test]
+fn test_labeled_ordered_list() {
+    assert_markdown_eq(
+        common::parts::labeled_ordered_list,
+        r###"
+(% id="lst1" %) 1. one
 1. two
 1. three
 
@@ -203,6 +265,102 @@ fn test_definition_list() {
         r###"
 ; Universe
 : Big, really big
+"###,
+    );
+}
+
+#[test]
+fn test_image_block() {
+    assert_markdown_eq(
+        common::parts::image_block,
+        r###"
+
+image:[[https://example.org/example.png]]
+"###,
+    );
+}
+
+#[test]
+fn test_image_block_with_label_and_caption() {
+    assert_markdown_eq(
+        common::parts::image_block_with_label_and_caption,
+        r###"
+
+(% id="img:example" %) image:[[https://example.org/example.png]]
+"###,
+    );
+}
+
+#[test]
+fn test_math_block() {
+    assert_markdown_eq(
+        common::parts::math_block,
+        r###"
+
+{{formula}}x=2+2^2{{/formula}}
+"###,
+    );
+}
+
+#[test]
+fn test_math_block_with_label_and_caption() {
+    assert_markdown_eq(
+        common::parts::math_block_with_label_and_caption,
+        r###"
+
+(% id="math:example" %) {{formula}}x=2+2^2{{/formula}}
+"###,
+    );
+}
+
+#[test]
+fn test_block_quote() {
+    assert_markdown_eq(
+        common::parts::block_quote,
+        r###"
+
+> a block quote
+> 
+"###,
+    );
+}
+
+#[test]
+fn test_nested_block_quotes() {
+    assert_markdown_eq(
+        common::parts::nested_block_quotes,
+        r###"
+
+> a block quote
+> 
+> 
+>> another block quote
+>> 
+> 
+"###,
+    );
+}
+
+#[test]
+fn test_text_styles() {
+    assert_markdown_eq(
+        common::parts::text_styles,
+        r###"
+Here is some plain **bold** //italic// ##mono## ##code## plain --strikethrough-- __underline__ small caps ^^superscript^^ ,,subscript,, text.
+"###,
+    );
+}
+
+#[test]
+fn test_nested_text_styles() {
+    assert_markdown_eq(
+        common::parts::nested_text_styles,
+        r###"
+Here is some **//bold italic//** text.
+
+Here is some bold italic plain text.
+
+Here is some //bold plain italic// text.
 "###,
     );
 }

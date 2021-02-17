@@ -5,7 +5,7 @@ pub mod common;
 
 #[inline]
 fn assert_markdown_eq(part_fn: impl Fn() -> Document, expected: &str) {
-    common::assert_serialized_eq(&part_fn(), MarkdownFlavor::GitHub.into(), expected)
+    common::assert_serialized_eq(&part_fn(), MarkdownFlavor::Multi.into(), expected)
 }
 
 #[test]
@@ -29,7 +29,7 @@ fn test_skos() {
 
 [[http://amazon.com/vocabulary/fashion-design#DesignScheme]]
 
-## Labels
+[Labels] ## Labels
 
 
 > **skos:prefLabel**
@@ -42,7 +42,7 @@ fn test_skos() {
 |Clothing shapes, patterns, and details|**en**|
 
 
-## Other Properties
+[Other_Properties] ## Other Properties
 
 -----
 
@@ -50,7 +50,7 @@ Jump to: [[Concepts Hierarchy>>.||anchor=HConcepts_Hierarchy]] | [[Concepts>>.||
 
 -----
 
-## Concept Hierarchy
+[Concept_Hierarchy] ## Concept Hierarchy
 
 * **First item**
 * Second item
@@ -58,7 +58,7 @@ Jump to: [[Concepts Hierarchy>>.||anchor=HConcepts_Hierarchy]] | [[Concepts>>.||
 * First item
 
 
-## Appendix - RDF
+[Appendix_-_RDF] ## Appendix - RDF
 
 ```turtle
 @prefix foo: <...>
@@ -106,7 +106,7 @@ fn test_document_with_labeled_heading() {
     assert_markdown_eq(
         common::parts::document_with_labeled_heading,
         r###"
-# Test Document
+[Test_Document] # Test Document
 "###,
     );
 }
@@ -138,6 +138,7 @@ fn test_document_with_front_matter() {
     assert_markdown_eq(
         common::parts::document_with_front_matter,
         r###"
+{{TOC}}
 
 
 
@@ -189,7 +190,7 @@ fn test_labeled_ordered_list() {
     assert_markdown_eq(
         common::parts::labeled_ordered_list,
         r###"
-1. one
+[lst1] 1. one
 1. two
 1. three
 
@@ -261,7 +262,8 @@ fn test_definition_list() {
     assert_markdown_eq(
         common::parts::definition_list,
         r###"
-**Universe**:- Big, really big
+Universe
+: Big, really big
 "###,
     );
 }
@@ -283,7 +285,7 @@ fn test_image_block_with_label_and_caption() {
         common::parts::image_block_with_label_and_caption,
         r###"
 
-![[https://example.org/example.png]]
+[img:example] ![[https://example.org/example.png]]
 "###,
     );
 }
@@ -294,6 +296,7 @@ fn test_math_block() {
         common::parts::math_block,
         r###"
 
+$$x=2+2^2$$
 "###,
     );
 }
@@ -304,6 +307,7 @@ fn test_math_block_with_label_and_caption() {
         common::parts::math_block_with_label_and_caption,
         r###"
 
+[math:example] $$x=2+2^2$$
 "###,
     );
 }
@@ -341,7 +345,7 @@ fn test_text_styles() {
     assert_markdown_eq(
         common::parts::text_styles,
         r###"
-Here is some plain **bold** *italic* `mono` `code` plain ~~strikethrough~~ underline small caps superscript subscript text.
+Here is some plain **bold** *italic* `mono` `code` plain strikethrough underline small caps superscript subscript text.
 "###,
     );
 }

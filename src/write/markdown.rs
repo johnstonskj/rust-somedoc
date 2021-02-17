@@ -18,7 +18,8 @@
 
 use crate::error;
 use crate::model::block::{
-    Alignment, Caption, Column, HasAlignment, HasCaption, HeadingLevel, Label, ListKind,
+    Alignment, Caption, Column, FrontMatter, HasAlignment, HasCaption, HeadingLevel, Label,
+    ListKind,
 };
 use crate::model::document::Metadata;
 use crate::model::inline::{Character, HyperLink, HyperLinkTarget, Image, Math, SpanStyle, Text};
@@ -394,6 +395,7 @@ impl<'a, W: Write> DocumentVisitor for MarkdownWriter<'a, W> {
 impl<'a, W: Write> BlockVisitor for MarkdownWriter<'a, W> {
     fn start_block(&self) -> crate::error::Result<()> {
         self.debug(DebugMark::SOB)?;
+        // TODO: omit these if not required?
         self.end_line()?;
         self.start_line()
     }
@@ -415,6 +417,25 @@ impl<'a, W: Write> BlockVisitor for MarkdownWriter<'a, W> {
                 self.write(&format!("{{{{comment}}}}\n{}\n{{{{/comment}}}}", value,))?;
                 self.end_line()?;
             }
+        }
+        Ok(())
+    }
+
+    fn front_matter(&self, value: &FrontMatter) -> crate::error::Result<()> {
+        match self.flavor {
+            MarkdownFlavor::Multi => {
+                if matches!(value, FrontMatter::TableOfContents) {
+                    self.write("{{TOC}}")?;
+                    self.end_line()?;
+                }
+            }
+            MarkdownFlavor::XWiki => {
+                if matches!(value, FrontMatter::TableOfContents) {
+                    self.write("{{toc/}}")?;
+                    self.end_line()?;
+                }
+            }
+            _ => {}
         }
         Ok(())
     }
@@ -472,12 +493,20 @@ impl<'a, W: Write> BlockVisitor for MarkdownWriter<'a, W> {
         _caption: &Option<Caption>,
         label: &Option<Label>,
     ) -> crate::error::Result<()> {
-        if let Some(inline_visitor) = BlockVisitor::inline_visitor(self) {
-            self.end_line()?;
-            self.start_line()?;
-            self.write_label_before(label)?;
-            inline_visitor.math(value)?;
-            self.write_label_after(label)?;
+        if matches!(self.flavor, MarkdownFlavor::Multi | MarkdownFlavor::XWiki) {
+            if let Some(inline_visitor) = BlockVisitor::inline_visitor(self) {
+                self.end_line()?;
+                self.start_line()?;
+                self.write_label_before(label)?;
+                if matches!(self.flavor, MarkdownFlavor::Multi) {
+                    self.write("$")?;
+                }
+                inline_visitor.math(value)?;
+                if matches!(self.flavor, MarkdownFlavor::Multi) {
+                    self.write("$")?;
+                }
+                self.write_label_after(label)?;
+            }
         }
         Ok(())
     }
@@ -488,14 +517,12 @@ impl<'a, W: Write> BlockVisitor for MarkdownWriter<'a, W> {
         Ok(())
     }
 
-    fn end_list(&self, _: &ListKind, label: &Option<Label>) -> crate::error::Result<()> {
+    fn end_list(&self, _: &ListKind, _: &Option<Label>) -> crate::error::Result<()> {
         let _ = self.list_prefix_stack.borrow_mut().pop();
-        self.write_label_after(label)?;
         Ok(())
     }
 
-    fn start_list_item(&self, label: &Option<Label>) -> crate::error::Result<()> {
-        self.write_label_before(label)?;
+    fn start_list_item(&self, _: &Option<Label>) -> crate::error::Result<()> {
         let list_stack = self.list_prefix_stack.borrow();
         if !list_stack.is_empty() {
             let length = if self.flavor == MarkdownFlavor::XWiki {
@@ -532,18 +559,19 @@ impl<'a, W: Write> BlockVisitor for MarkdownWriter<'a, W> {
         Ok(())
     }
 
-    fn end_list_item(&self, label: &Option<Label>) -> crate::error::Result<()> {
-        self.write_label_after(label)?;
+    fn end_list_item(&self, _: &Option<Label>) -> crate::error::Result<()> {
         self.end_line()
     }
 
     fn start_definition(&self, term: &str, label: &Option<Label>) -> crate::error::Result<()> {
+        self.write_label_before(label)?;
         match self.flavor {
             MarkdownFlavor::Multi | MarkdownFlavor::PhpExtra => {
-                // Do nothing
+                self.write(term)?;
+                self.end_line()?;
+                self.start_line()?;
             }
             MarkdownFlavor::XWiki => {
-                self.write_label_before(label)?;
                 self.write(&format!("; {}", term))?;
                 self.write_label_after(label)?;
                 self.end_line()?;
@@ -609,7 +637,11 @@ impl<'a, W: Write> BlockVisitor for MarkdownWriter<'a, W> {
                 }
             }
             MarkdownFlavor::PhpExtra => {
-                self.write(&format!("```\n{}\n```\n", code))?;
+                if let Some(language) = language {
+                    self.write(&format!("``` .{}\n{}\n```", language, code))?;
+                } else {
+                    self.write(&format!("```\n{}\n```", code))?;
+                }
             }
             MarkdownFlavor::XWiki => {
                 if let Some(language) = language {
@@ -630,13 +662,13 @@ impl<'a, W: Write> BlockVisitor for MarkdownWriter<'a, W> {
         self.write_label_before(label)?;
         let mut line_prefix_stack = self.line_prefix_stack.borrow_mut();
         if self.flavor == MarkdownFlavor::XWiki {
+            line_prefix_stack.push(">".to_string());
+        } else {
             if line_prefix_stack.is_empty() {
                 line_prefix_stack.push(">".to_string());
             } else {
                 line_prefix_stack.push(" >".to_string());
             }
-        } else {
-            line_prefix_stack.push(">".to_string());
         }
         Ok(())
     }
@@ -795,8 +827,14 @@ impl<'a, W: Write> InlineVisitor for MarkdownWriter<'a, W> {
     }
 
     fn math(&self, value: &Math) -> crate::error::Result<()> {
-        if self.flavor == MarkdownFlavor::XWiki {
-            self.write(&format!("{{{{formula}}}}{}{{{{/formula}}}}", value.inner()))?;
+        match self.flavor {
+            MarkdownFlavor::Multi => {
+                self.write(&format!("${}$", value.inner()))?;
+            }
+            MarkdownFlavor::XWiki => {
+                self.write(&format!("{{{{formula}}}}{}{{{{/formula}}}}", value.inner()))?;
+            }
+            _ => {}
         }
         Ok(())
     }

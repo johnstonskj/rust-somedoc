@@ -3,9 +3,30 @@ use somedoc::write::OutputFormat;
 
 pub mod common;
 
+const COMMON_PREAMBLE: &str = r###"<html>
+  <head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/default.min.css"></link>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+  </head>
+  "###;
+
 #[inline]
-fn assert_html_eq(part_fn: impl Fn() -> Document, expected: &str) {
-    common::assert_serialized_eq(&part_fn(), OutputFormat::Html, expected)
+fn assert_html_eq(part_fn: impl Fn() -> Document, expected: &str, preamble_included: bool) {
+    common::assert_serialized_eq(
+        &part_fn(),
+        OutputFormat::Html,
+        &format!(
+            "{}{}",
+            if preamble_included {
+                ""
+            } else {
+                COMMON_PREAMBLE
+            },
+            expected
+        ),
+    )
 }
 
 #[test]
@@ -68,6 +89,7 @@ foo:bar foo:baz 12.
     </pre>
   </body>
 </html>"###,
+        true,
     );
 }
 
@@ -75,16 +97,10 @@ foo:bar foo:baz 12.
 fn test_empty_document() {
     assert_html_eq(
         common::parts::empty_document,
-        r###"<html>
-  <head>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/default.min.css"></link>
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-    <script id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
-  </head>
-  <body>
+        r###"<body>
   </body>
 </html>"###,
+        false,
     );
 }
 
@@ -103,6 +119,7 @@ fn test_document_with_title() {
   <body>
   </body>
 </html>"###,
+        true,
     );
 }
 
@@ -110,17 +127,23 @@ fn test_document_with_title() {
 fn test_document_with_heading() {
     assert_html_eq(
         common::parts::document_with_heading,
-        r###"<html>
-  <head>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/default.min.css"></link>
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-    <script id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
-  </head>
-  <body>
+        r###"<body>
     <h1>Test Document</h1>
   </body>
 </html>"###,
+        false,
+    );
+}
+
+#[test]
+fn test_document_with_labeled_heading() {
+    assert_html_eq(
+        common::parts::document_with_labeled_heading,
+        r###"<body>
+    <h1 id="Test_Document">Test Document</h1>
+  </body>
+</html>"###,
+        false,
     );
 }
 
@@ -128,14 +151,7 @@ fn test_document_with_heading() {
 fn test_document_with_headings() {
     assert_html_eq(
         common::parts::document_with_headings,
-        r###"<html>
-  <head>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/default.min.css"></link>
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-    <script id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
-  </head>
-  <body>
+        r###"<body>
     <h1>Section</h1>
     <h2>Sub-section</h2>
     <h3>Sub-sub-section</h3>
@@ -145,6 +161,35 @@ fn test_document_with_headings() {
     <h7>Sub-sub-sub-sub-sub-sub-section</h7>
   </body>
 </html>"###,
+        false,
+    );
+}
+
+#[test]
+fn test_paragraph_alignment() {
+    assert_html_eq(
+        common::parts::paragraph_alignment,
+        r###"<body>
+    <p>left-aligned</p>
+    <p>right-aligned</p>
+    <p>center-aligned</p>
+    <p>both-aligned</p>
+  </body>
+</html>"###,
+        false,
+    );
+}
+
+#[test]
+fn test_document_with_front_matter() {
+    assert_html_eq(
+        common::parts::document_with_front_matter,
+        r###"<body>
+    <h1>Section One</h1>
+    <h1>Section Two</h1>
+  </body>
+</html>"###,
+        false,
     );
 }
 
@@ -152,14 +197,7 @@ fn test_document_with_headings() {
 fn test_unordered_list() {
     assert_html_eq(
         common::parts::unordered_list,
-        r###"<html>
-  <head>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/default.min.css"></link>
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-    <script id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
-  </head>
-  <body>
+        r###"<body>
     <ul>
       <li>one</li>
       <li>two</li>
@@ -167,6 +205,7 @@ fn test_unordered_list() {
     </ul>
   </body>
 </html>"###,
+        false,
     );
 }
 
@@ -174,14 +213,7 @@ fn test_unordered_list() {
 fn test_ordered_list() {
     assert_html_eq(
         common::parts::ordered_list,
-        r###"<html>
-  <head>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/default.min.css"></link>
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-    <script id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
-  </head>
-  <body>
+        r###"<body>
     <ol>
       <li>one</li>
       <li>two</li>
@@ -189,6 +221,23 @@ fn test_ordered_list() {
     </ol>
   </body>
 </html>"###,
+        false,
+    );
+}
+
+#[test]
+fn test_labeled_ordered_list() {
+    assert_html_eq(
+        common::parts::labeled_ordered_list,
+        r###"<body>
+    <ol id="lst1">
+      <li id="lst1-itm1">one</li>
+      <li id="lst1-itm2">two</li>
+      <li id="lst1-itm3">three</li>
+    </ol>
+  </body>
+</html>"###,
+        false,
     );
 }
 
@@ -196,14 +245,7 @@ fn test_ordered_list() {
 fn test_nested_unordered_list() {
     assert_html_eq(
         common::parts::nested_unordered_list,
-        r###"<html>
-  <head>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/default.min.css"></link>
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-    <script id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
-  </head>
-  <body>
+        r###"<body>
     <ul>
       <li>one</li>
       <li>two</li>
@@ -217,6 +259,7 @@ fn test_nested_unordered_list() {
     </ul>
   </body>
 </html>"###,
+        false,
     );
 }
 
@@ -224,14 +267,7 @@ fn test_nested_unordered_list() {
 fn test_nested_ordered_list() {
     assert_html_eq(
         common::parts::nested_ordered_list,
-        r###"<html>
-  <head>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/default.min.css"></link>
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-    <script id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
-  </head>
-  <body>
+        r###"<body>
     <ol>
       <li>one</li>
       <li>two</li>
@@ -245,6 +281,7 @@ fn test_nested_ordered_list() {
     </ol>
   </body>
 </html>"###,
+        false,
     );
 }
 
@@ -252,14 +289,7 @@ fn test_nested_ordered_list() {
 fn test_nested_mixed_lists() {
     assert_html_eq(
         common::parts::nested_mixed_lists,
-        r###"<html>
-  <head>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/default.min.css"></link>
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-    <script id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
-  </head>
-  <body>
+        r###"<body>
     <ul>
       <li>one</li>
       <li>two</li>
@@ -278,6 +308,7 @@ fn test_nested_mixed_lists() {
     </ul>
   </body>
 </html>"###,
+        false,
     );
 }
 
@@ -285,19 +316,118 @@ fn test_nested_mixed_lists() {
 fn test_definition_list() {
     assert_html_eq(
         common::parts::definition_list,
-        r###"<html>
-  <head>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/default.min.css"></link>
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-    <script id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
-  </head>
-  <body>
+        r###"<body>
     <dl>
       <dt>Universe</dt>
       <dd>Big, really big</dd>
     </dl>
   </body>
 </html>"###,
+        false,
+    );
+}
+
+#[test]
+fn test_image_block() {
+    assert_html_eq(
+        common::parts::image_block,
+        r###"<body>
+    <div><img src="https://example.org/example.png"></div>
+  </body>
+</html>"###,
+        false,
+    );
+}
+
+#[test]
+fn test_image_block_with_label_and_caption() {
+    assert_html_eq(
+        common::parts::image_block_with_label_and_caption,
+        r###"<body>
+    <div id="img:example"><img src="https://example.org/example.png"></div>
+  </body>
+</html>"###,
+        false,
+    );
+}
+
+#[test]
+fn test_math_block() {
+    assert_html_eq(
+        common::parts::math_block,
+        r###"<body>
+    <div>\[ x=2+2^2 \]</div>
+  </body>
+</html>"###,
+        false,
+    );
+}
+
+#[test]
+fn test_math_block_with_label_and_caption() {
+    assert_html_eq(
+        common::parts::math_block_with_label_and_caption,
+        r###"<body>
+    <div id="math:example">\[ x=2+2^2 \]</div>
+  </body>
+</html>"###,
+        false,
+    );
+}
+
+#[test]
+fn test_block_quote() {
+    assert_html_eq(
+        common::parts::block_quote,
+        r###"<body>
+    <blockquote>
+      <p>a block quote</p>
+    </blockquote>
+  </body>
+</html>"###,
+        false,
+    );
+}
+
+#[test]
+fn test_nested_block_quotes() {
+    assert_html_eq(
+        common::parts::nested_block_quotes,
+        r###"<body>
+    <blockquote>
+      <p>a block quote</p>
+      <blockquote>
+        <p>another block quote</p>
+      </blockquote>
+    </blockquote>
+  </body>
+</html>"###,
+        false,
+    );
+}
+
+#[test]
+fn test_text_styles() {
+    assert_html_eq(
+        common::parts::text_styles,
+        r###"<body>
+    <p>Here is some&#32;plain&#32;<strong>bold</strong>&#32;<em>italic</em>&#32;<code>mono</code>&#32;<code>code</code>&#32;plain&#32;<del>strikethrough</del>&#32;<ins>underline</ins>&#32;small caps&#32;<sup>superscript</sup>&#32;<sub>subscript</sub> text.</p>
+  </body>
+</html>"###,
+        false,
+    );
+}
+
+#[test]
+fn test_nested_text_styles() {
+    assert_html_eq(
+        common::parts::nested_text_styles,
+        r###"<body>
+    <p>Here is some <strong><em>bold italic</em></strong> text.</p>
+    <p>Here is some bold italic plain text.</p>
+    <p>Here is some <em>bold plain italic</em> text.</p>
+  </body>
+</html>"###,
+        false,
     );
 }

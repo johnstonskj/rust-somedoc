@@ -17,7 +17,8 @@ println!("{}", doc_str);
 */
 
 use crate::model::block::{
-    Alignment, Caption, Column, HasAlignment, HasCaption, HeadingLevel, Label, ListKind,
+    Alignment, Caption, Column, FrontMatter, HasAlignment, HasCaption, HeadingLevel, Label,
+    ListKind,
 };
 use crate::model::document::Metadata;
 use crate::model::inline::text::Size;
@@ -82,6 +83,13 @@ pub enum PreambleItem {
         /// The definition after to the environment's body.
         after: String,
     },
+    /// A command to call during the preamble
+    Other {
+        /// Name of command to call.
+        name: String,
+        /// All arguments, including formatting, for the command.
+        args: String,
+    },
 }
 
 ///
@@ -101,10 +109,6 @@ pub enum PreambleItem {
 /// ```
 #[derive(Clone, Debug)]
 pub struct LatexPreamble(Vec<PreambleItem>);
-
-// ------------------------------------------------------------------------------------------------
-// Public Types
-// ------------------------------------------------------------------------------------------------
 
 ///
 /// Implementation of the LaTeX writer structure, usually this is accessed via the `writer`
@@ -157,12 +161,12 @@ pub fn writer<W: Write>(doc: &Document, w: &mut W) -> crate::error::Result<()> {
 
 impl PreambleItem {
     /// Create a new class item, note there can only be one class item per preamble.
-    pub fn class(name: &str) -> PreambleItem {
+    pub fn class(name: &str) -> Self {
         Self::class_with(name, &[])
     }
 
     /// Create a new class item with options, note there can only be one class item per preamble.
-    pub fn class_with(name: &str, options: &[&str]) -> PreambleItem {
+    pub fn class_with(name: &str, options: &[&str]) -> Self {
         Self::Class {
             name: name.to_string(),
             options: options.iter().map(|s| s.to_string()).collect(),
@@ -170,12 +174,12 @@ impl PreambleItem {
     }
 
     /// Create a new package preamble item.
-    pub fn package(name: &str) -> PreambleItem {
+    pub fn package(name: &str) -> Self {
         Self::package_with(name, &[])
     }
 
     /// Create a new package preamble item with options.
-    pub fn package_with(name: &str, options: &[&str]) -> PreambleItem {
+    pub fn package_with(name: &str, options: &[&str]) -> Self {
         Self::Package {
             name: name.to_string(),
             options: options.iter().map(|s| s.to_string()).collect(),
@@ -183,12 +187,12 @@ impl PreambleItem {
     }
 
     /// Create a new command definition.
-    pub fn new_command(name: &str, define: &str) -> PreambleItem {
+    pub fn new_command(name: &str, define: &str) -> Self {
         Self::new_command_with(name, define, 0)
     }
 
     /// Create a new command definition with argument count.
-    pub fn new_command_with(name: &str, define: &str, arg_count: usize) -> PreambleItem {
+    pub fn new_command_with(name: &str, define: &str, arg_count: usize) -> Self {
         Self::Command {
             renew: false,
             name: name.to_string(),
@@ -198,17 +202,25 @@ impl PreambleItem {
     }
 
     /// Create a renew command definition.
-    pub fn renew_command(name: &str, define: &str) -> PreambleItem {
+    pub fn renew_command(name: &str, define: &str) -> Self {
         Self::renew_command_with(name, define, 0)
     }
 
     /// Create a renew command definition with argument count.
-    pub fn renew_command_with(name: &str, define: &str, arg_count: usize) -> PreambleItem {
+    pub fn renew_command_with(name: &str, define: &str, arg_count: usize) -> Self {
         Self::Command {
             renew: true,
             name: name.to_string(),
             arg_count,
             define: define.to_string(),
+        }
+    }
+
+    /// Create a command to be called during the preamble.
+    pub fn other(name: &str, args: &str) -> Self {
+        Self::Other {
+            name: name.to_string(),
+            args: args.to_string(),
         }
     }
 
@@ -231,6 +243,11 @@ impl PreambleItem {
     pub fn is_environment(&self) -> bool {
         matches!(self, PreambleItem::Package { .. })
     }
+
+    /// Return `true` if this is a `PreambleItem::Other` variant, else `false`.
+    pub fn is_other(&self) -> bool {
+        matches!(self, PreambleItem::Other { .. })
+    }
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -240,13 +257,19 @@ impl Default for LatexPreamble {
         Self(vec![
             PreambleItem::class_with("article", &["twoside", "12pt", "lettersize"]),
             PreambleItem::package("amsmath"),
+            PreambleItem::package("caption"),
             PreambleItem::package("csquotes"),
             PreambleItem::package("graphicx"),
             PreambleItem::package("hyperref"),
             PreambleItem::package("listings"),
+            PreambleItem::package("ulem"),
             PreambleItem::new_command(
                 "thematicbreak",
                 r"\par\bigskip\noindent\hrulefill\par\bigskip",
+            ),
+            PreambleItem::other(
+                "DeclareCaptionType",
+                "{equfloat}[Equation][List of equations]",
             ),
         ])
     }
@@ -459,6 +482,10 @@ impl<'a, W: Write> LatexWriter<'a, W> {
                     self.end_line()?;
                     self.outdent();
                 }
+                PreambleItem::Other { name, args } => {
+                    self.write(&format!("\\{}{}", name, args))?;
+                    self.end_line()?;
+                }
                 _ => {}
             }
         }
@@ -590,6 +617,38 @@ impl<'a, W: Write> BlockVisitor for LatexWriter<'a, W> {
         self.end_line()
     }
 
+    fn front_matter(&self, value: &FrontMatter) -> crate::error::Result<()> {
+        match value {
+            FrontMatter::TableOfContents => {
+                self.begin_line()?;
+                self.just_command("tableofcontents")?;
+                self.end_lines(2)?;
+            }
+            FrontMatter::TableOfEquations => {
+                self.begin_line()?;
+                self.just_command("listofequfloats")?;
+                self.end_lines(2)?;
+            }
+            FrontMatter::TableOfFigures => {
+                self.begin_line()?;
+                self.just_command("listoffigures")?;
+                self.end_lines(2)?;
+            }
+            FrontMatter::TableOfListings => {
+                self.begin_line()?;
+                self.just_command("lstlistoflistings")?;
+                self.end_lines(2)?;
+            }
+            FrontMatter::TableOfTables => {
+                self.begin_line()?;
+                self.just_command("listoftables")?;
+                self.end_lines(2)?;
+            }
+            FrontMatter::Glossary => {}
+        }
+        Ok(())
+    }
+
     fn start_heading(
         &self,
         level: &HeadingLevel,
@@ -617,24 +676,28 @@ impl<'a, W: Write> BlockVisitor for LatexWriter<'a, W> {
         self.begin_line()?;
         self.begin_env_with("figure", &["h!bt"])?;
         self.end_line()?;
+
         self.begin_line()?;
         self.just_command("centering")?;
         self.end_line()?;
 
+        self.begin_line()?;
         let inline_visitor = BlockVisitor::inline_visitor(self).unwrap();
         inline_visitor.image(value)?;
-
         self.end_line()?;
+
         if let Some(caption) = caption {
             self.begin_line()?;
             self.command("caption", caption)?;
             self.end_line()?;
         }
+
         if let Some(label) = label {
             self.begin_line()?;
             self.command("label", label)?;
             self.end_line()?;
         }
+
         self.end_env("figure")?;
         self.end_lines(2)
     }
@@ -642,18 +705,36 @@ impl<'a, W: Write> BlockVisitor for LatexWriter<'a, W> {
     fn math(
         &self,
         value: &Math,
-        _caption: &Option<Caption>,
+        caption: &Option<Caption>,
         label: &Option<Label>,
     ) -> crate::error::Result<()> {
         self.begin_line()?;
-        self.write_label(&label)?;
+        self.begin_env_with("equfloat", &["h!bt"])?;
+        self.end_line()?;
+        self.begin_line()?;
         self.begin_env("equation")?;
         self.end_line()?;
+        self.begin_line()?;
         self.write(value)?;
         if !value.ends_with('\n') {
             self.write("\n")?;
         }
         self.end_env("equation")?;
+        self.end_line()?;
+
+        if let Some(caption) = caption {
+            self.begin_line()?;
+            self.command("caption", caption)?;
+            self.end_line()?;
+        }
+
+        if let Some(label) = label {
+            self.begin_line()?;
+            self.command("label", label)?;
+            self.end_line()?;
+        }
+
+        self.end_env("equfloat")?;
         self.end_lines(2)
     }
 
@@ -1034,10 +1115,196 @@ impl<'a, W: Write> InlineVisitor for LatexWriter<'a, W> {
     fn end_span(&self, styles: &[SpanStyle]) -> crate::error::Result<()> {
         self.write(&string_of_strings(
             "}",
-            styles
-                .iter()
-                .filter(|style| **style != SpanStyle::Plain)
-                .count(),
+            styles.iter().fold(0, |count, style| {
+                if *style == SpanStyle::Plain {
+                    0
+                } else {
+                    count + 1
+                }
+            }),
         ))
+    }
+}
+
+#[allow(dead_code)]
+mod model {
+
+    use std::fmt::{Display, Formatter};
+
+    // --------------------------------------------------------------------------------------------
+    // Public Types
+    // --------------------------------------------------------------------------------------------
+
+    #[derive(Clone, Debug, PartialEq)]
+    enum ArgKind {
+        Braced,
+        Bracketed,
+    }
+
+    #[derive(Clone, Debug)]
+    struct Arg {
+        kind: ArgKind,
+        value: String,
+    }
+
+    #[derive(Clone, Debug)]
+    struct Command {
+        name: String,
+        args: Vec<Arg>,
+    }
+
+    #[derive(Clone, Debug)]
+    struct Environment {
+        name: String,
+        args: Vec<Arg>,
+    }
+
+    // --------------------------------------------------------------------------------------------
+    // Implementations
+    // --------------------------------------------------------------------------------------------
+
+    impl Default for ArgKind {
+        fn default() -> Self {
+            Self::Braced
+        }
+    }
+
+    // --------------------------------------------------------------------------------------------
+
+    impl Default for Arg {
+        fn default() -> Self {
+            Self {
+                kind: Default::default(),
+                value: String::new(),
+            }
+        }
+    }
+
+    impl From<String> for Arg {
+        fn from(s: String) -> Self {
+            Self {
+                kind: Default::default(),
+                value: s,
+            }
+        }
+    }
+
+    impl From<&str> for Arg {
+        fn from(s: &str) -> Self {
+            Self::from(s.to_string())
+        }
+    }
+
+    impl Display for Arg {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            match self.kind {
+                ArgKind::Braced => write!(f, "{{{}}}", self.value),
+                ArgKind::Bracketed => write!(f, "[{}]", self.value),
+            }
+        }
+    }
+
+    impl Arg {
+        fn braced<S: Into<String>>(value: S) -> Self {
+            Self {
+                kind: ArgKind::Braced,
+                value: value.into(),
+            }
+        }
+        fn braced_from<S: Clone + Into<String>>(values: &[S]) -> Self {
+            Self {
+                kind: ArgKind::Braced,
+                value: values
+                    .iter()
+                    .cloned()
+                    .map(|v| v.into())
+                    .collect::<Vec<String>>()
+                    .join(", "),
+            }
+        }
+        fn bracketed<S: Into<String>>(value: S) -> Self {
+            Self {
+                kind: ArgKind::Bracketed,
+                value: value.into(),
+            }
+        }
+        fn bracketed_from<S: Clone + Into<String>>(values: &[S]) -> Self {
+            Self {
+                kind: ArgKind::Bracketed,
+                value: values
+                    .iter()
+                    .cloned()
+                    .map(|v| v.into())
+                    .collect::<Vec<String>>()
+                    .join(", "),
+            }
+        }
+    }
+
+    // --------------------------------------------------------------------------------------------
+
+    impl Display for Command {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            write!(
+                f,
+                "\\{}{}",
+                self.name,
+                self.args
+                    .iter()
+                    .map(|a| a.to_string())
+                    .collect::<Vec<String>>()
+                    .join("")
+            )
+        }
+    }
+
+    impl Command {
+        fn new<S: Into<String>>(name: S) -> Self {
+            Self {
+                name: name.into(),
+                args: Default::default(),
+            }
+        }
+        fn with_arg<S: Into<String>>(name: S, arg: Arg) -> Self {
+            Self {
+                name: name.into(),
+                args: vec![arg],
+            }
+        }
+        fn with_args<S: Into<String>>(name: S, args: &[Arg]) -> Self {
+            Self {
+                name: name.into(),
+                args: args.to_vec(),
+            }
+        }
+    }
+
+    // --------------------------------------------------------------------------------------------
+
+    impl Environment {
+        fn new(name: &str) -> Self {
+            Self {
+                name: name.to_string(),
+                args: Default::default(),
+            }
+        }
+        fn with_args(name: &str, args: &[Arg]) -> Self {
+            Self {
+                name: name.to_string(),
+                args: args.to_vec(),
+            }
+        }
+        fn begin(&self) -> Command {
+            Command {
+                name: self.name.clone(),
+                args: self.args.clone(),
+            }
+        }
+        fn end(&self) -> Command {
+            Command {
+                name: self.name.clone(),
+                args: Default::default(),
+            }
+        }
     }
 }
