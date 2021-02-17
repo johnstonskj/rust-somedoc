@@ -113,6 +113,21 @@ println!("{}", doc_str);
 
 ## Changes
 
+**Version 0.2.6**
+
+* Testing: better link testing.
+* Fixed: link output for non-XWiki markdown.
+* Fixed: link output for HTML.
+* Fixed: *closed* tag in HTML wasn't.
+* Fixed: XWiki writer didn't do line breaks correctly.
+* Fixed: XWiki line breaks.
+* Refactor: simplified `Image` to have path/`inner` and `alt_text` fields. 
+  * This reduced confusion with captions on links and images.
+  * Added: helper functions and constructors to `Image`.
+* Added: `Label::copy_from` constructor.
+* Added: missing `math` and `add_math` functions from `HasInlineContent`.
+* Added: missing `Into<BlockContent>` for `Math`.
+
 **Version 0.2.5**
 
 * Testing: added tests for labels, paragraph alignment, images, math, block quotes, and some text styles.
@@ -234,9 +249,3 @@ changes.
 **Version 0.1.0**
 
 * Initial commit. Basic model working, initial Markdown and XWiki writers.
-
-## TODO
-
-* Investigate math support in some form.
-* Investigate float hints.
-* Investigate glossary, acronym, and bib support.

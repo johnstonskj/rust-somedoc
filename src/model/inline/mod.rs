@@ -64,6 +64,13 @@ pub trait HasInlineContent: Default + HasInnerContent<InlineContent> {
         new_self
     }
 
+    /// Create a new inline content container from the provided `Math` content item.
+    fn math(inner: Math) -> Self {
+        let mut new_self = Self::default();
+        let _ = new_self.add_math(inner);
+        new_self
+    }
+
     /// Create a new inline content container from the provided string (into `Text`) content item.
     fn text_str(inner: &str) -> Self {
         let mut new_self = Self::default();
@@ -116,6 +123,12 @@ pub trait HasInlineContent: Default + HasInnerContent<InlineContent> {
     fn add_text_str(&mut self, inner: &str) -> &mut Self {
         let t: Text = inner.into();
         self.add_content(t.into()).unwrap();
+        self
+    }
+
+    /// Add the provided `Math` to this container's inner content.
+    fn add_math(&mut self, inner: Math) -> &mut Self {
+        let _ = self.add_content(inner.into()).unwrap();
         self
     }
 

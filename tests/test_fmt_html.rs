@@ -48,7 +48,7 @@ fn test_skos() {
 - more nested lists
 - tables -->
     <p><em>Terms commonly used to describe fashion items. It includes terms for outline, fit, elements, detailing, and patterns.</em></p>
-    <p><a href="http://amazon.com/vocabulary/fashion-design#DesignScheme"></p>
+    <p><a href="http://amazon.com/vocabulary/fashion-design#DesignScheme"/></p>
     <h2 id="Labels">Labels</h2>
     <blockquote>
       <p><strong>skos:prefLabel</strong></p>
@@ -65,7 +65,7 @@ fn test_skos() {
     </table>
     <h2 id="Other_Properties">Other Properties</h2>
     <hr/>
-    <p>Jump to: <a href="#Concepts_Hierarchy"> | <a href="#Concepts"> | <a href="#Collections"> | <a href="#Appendix_-_RDF"></p>
+    <p>Jump to: <a href="#Concepts_Hierarchy">Concepts Hierarchy</a> | <a href="#Concepts">Concepts</a> | <a href="#Collections">Collections</a> | <a href="#Appendix_-_RDF">Appendix - RDF</a></p>
     <hr/>
     <h2 id="Concept_Hierarchy">Concept Hierarchy</h2>
     <ul>
@@ -332,7 +332,7 @@ fn test_image_block() {
     assert_html_eq(
         common::parts::image_block,
         r###"<body>
-    <div><img src="https://example.org/example.png"></div>
+    <div><img src="https://example.org/example.png"/></div>
   </body>
 </html>"###,
         false,
@@ -344,7 +344,7 @@ fn test_image_block_with_label_and_caption() {
     assert_html_eq(
         common::parts::image_block_with_label_and_caption,
         r###"<body>
-    <div id="img:example"><img src="https://example.org/example.png"></div>
+    <div id="img:example"><img src="https://example.org/example.png"/></div>
   </body>
 </html>"###,
         false,
@@ -426,6 +426,34 @@ fn test_nested_text_styles() {
     <p>Here is some <strong><em>bold italic</em></strong> text.</p>
     <p>Here is some bold italic plain text.</p>
     <p>Here is some <em>bold plain italic</em> text.</p>
+  </body>
+</html>"###,
+        false,
+    );
+}
+
+#[test]
+fn test_hyper_links() {
+    assert_html_eq(
+        common::parts::hyper_links,
+        r###"<body>
+    <p><a href="https://example.org/"/></p>
+    <p><a href="https://example.org/">example</a></p>
+    <p><a href="#section-2"/></p>
+    <p><a href="#section-2">example</a></p>
+  </body>
+</html>"###,
+        false,
+    );
+}
+
+#[test]
+fn test_complex_paragraph() {
+    assert_html_eq(
+        common::parts::complex_paragraph,
+        r###"<body>
+    <p>This paragraph has <a href="https://example.org/">a link</a>, some math:&nbsp;\( x=2+2^2 \), a line break,<br/>
+an image:&nbsp;<img src="https://example.org/favicon.png"/>&nbsp;&mdash;&nbsp; all together!</p>
   </body>
 </html>"###,
         false,

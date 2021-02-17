@@ -3,6 +3,7 @@ use somedoc::model::block::{
     Alignment, DefinitionList, FrontMatter, HasAlignment, HasBlockContent, HasCaption, HasLabel,
     Heading, ImageBlock, Item, Label, List, MathBlock, Paragraph, Quote,
 };
+use somedoc::model::inline::Character;
 use somedoc::model::inline::{HasInlineContent, HyperLink, Image, Math, Span, SpanStyle};
 use somedoc::model::Document;
 use std::str::FromStr;
@@ -200,19 +201,17 @@ pub fn definition_list() -> Document {
 
 pub fn image_block() -> Document {
     Document::default()
-        .add_image(Image::from(HyperLink::external("https://example.org/example.png")).into())
+        .add_image(Image::new("https://example.org/example.png").into())
         .clone()
 }
 
 pub fn image_block_with_label_and_caption() -> Document {
     Document::default()
         .add_image(
-            ImageBlock::from(Image::from(HyperLink::external(
-                "https://example.org/example.png",
-            )))
-            .set_caption("An Example Image".into())
-            .set_label(Label::from_str("img:example").unwrap())
-            .clone(),
+            ImageBlock::from(Image::new("https://example.org/example.png"))
+                .set_caption("An Example Image".into())
+                .set_label(Label::from_str("img:example").unwrap())
+                .clone(),
         )
         .clone()
 }
@@ -316,6 +315,52 @@ pub fn nested_text_styles() -> Document {
                     vec![SpanStyle::Bold, SpanStyle::Plain, SpanStyle::Italic],
                 ))
                 .add_span(Span::plain_str(" text."))
+                .clone(),
+        )
+        .clone()
+}
+
+pub fn hyper_links() -> Document {
+    Document::default()
+        .add_paragraph(Paragraph::link(HyperLink::external("https://example.org/")))
+        .add_paragraph(Paragraph::link(HyperLink::external_with_caption_str(
+            "https://example.org/",
+            "example",
+        )))
+        .add_paragraph(Paragraph::link(HyperLink::internal(
+            Label::from_str("section-2").unwrap(),
+        )))
+        .add_paragraph(Paragraph::link(HyperLink::internal_with_caption_str(
+            Label::from_str("section-2").unwrap(),
+            "example",
+        )))
+        .clone()
+}
+
+pub fn complex_paragraph() -> Document {
+    Document::default()
+        .add_paragraph(
+            Paragraph::default()
+                .add_text_str("This paragraph has ")
+                .add_link(HyperLink::external_with_caption_str(
+                    "https://example.org/",
+                    "a link",
+                ))
+                .add_text_str(", some math:")
+                .add_non_breaking_space()
+                .add_math(Math::from_str("x=2+2^2").unwrap())
+                .add_text_str(", a line break,")
+                .add_line_break()
+                .add_text_str("an image:")
+                .add_non_breaking_space()
+                .add_image(Image::with_alt_text(
+                    "https://example.org/favicon.png",
+                    "logo",
+                ))
+                .add_non_breaking_space()
+                .add_character(Character::EmDash)
+                .add_non_breaking_space()
+                .add_text_str(" all together!")
                 .clone(),
         )
         .clone()

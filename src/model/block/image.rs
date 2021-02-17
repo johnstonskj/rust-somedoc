@@ -1,7 +1,7 @@
 use crate::model::block::caption::HasCaption;
 use crate::model::block::{BlockContent, Caption};
 use crate::model::block::{HasLabel, Label};
-use crate::model::inline::{HyperLink, Image};
+use crate::model::inline::Image;
 #[cfg(feature = "fmt_json")]
 use serde::{Deserialize, Serialize};
 
@@ -28,8 +28,8 @@ pub struct ImageBlock {
 // Implementations
 // ------------------------------------------------------------------------------------------------
 
-impl From<HyperLink> for ImageBlock {
-    fn from(target: HyperLink) -> Self {
+impl From<String> for ImageBlock {
+    fn from(target: String) -> Self {
         Self::from(Image::from(target))
     }
 }

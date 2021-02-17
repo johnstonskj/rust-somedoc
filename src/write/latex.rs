@@ -1013,13 +1013,7 @@ impl<'a, W: Write> InlineVisitor for LatexWriter<'a, W> {
     }
 
     fn image(&self, value: &Image) -> crate::error::Result<()> {
-        self.command(
-            "includegraphics",
-            &match value.inner().target() {
-                HyperLinkTarget::External(v) => v.to_string(),
-                HyperLinkTarget::Internal(v) => v.to_string(),
-            },
-        )
+        self.command("includegraphics", value.inner())
     }
 
     fn text(&self, value: &Text) -> crate::error::Result<()> {

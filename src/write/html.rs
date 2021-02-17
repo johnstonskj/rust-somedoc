@@ -218,7 +218,7 @@ impl<'a, W: Write> HtmlWriter<'a, W> {
         self.write(
             w,
             &format!(
-                "<{} {}>",
+                "<{} {}/>",
                 tag,
                 attributes
                     .iter()
@@ -712,35 +712,43 @@ impl<'a, W: Write> TableVisitor for HtmlWriter<'a, W> {
 
 impl<'a, W: Write> InlineVisitor for HtmlWriter<'a, W> {
     fn link(&self, value: &HyperLink) -> crate::error::Result<()> {
-        self.closed_tag_with(
-            &mut self.w.borrow_mut(),
-            "a",
-            &[(
-                "href",
-                &match value.target() {
-                    HyperLinkTarget::External(v) => v.to_string(),
-                    HyperLinkTarget::Internal(v) => format!("#{}", self.anchor_id(v)),
-                },
-            )],
-            false,
-            false,
-        )
+        if let Some(caption) = value.caption() {
+            self.start_tag_with(
+                &mut self.w.borrow_mut(),
+                "a",
+                &[(
+                    "href",
+                    &match value.target() {
+                        HyperLinkTarget::External(v) => v.to_string(),
+                        HyperLinkTarget::Internal(v) => format!("#{}", self.anchor_id(v)),
+                    },
+                )],
+                false,
+            )?;
+            self.write(&mut self.w.borrow_mut(), caption.inner())?;
+            self.end_tag(&mut self.w.borrow_mut(), "a", false)
+        } else {
+            self.closed_tag_with(
+                &mut self.w.borrow_mut(),
+                "a",
+                &[(
+                    "href",
+                    &match value.target() {
+                        HyperLinkTarget::External(v) => v.to_string(),
+                        HyperLinkTarget::Internal(v) => format!("#{}", self.anchor_id(v)),
+                    },
+                )],
+                false,
+                false,
+            )
+        }
     }
 
     fn image(&self, value: &Image) -> crate::error::Result<()> {
-        let src = match value.inner().target() {
-            HyperLinkTarget::External(v) => v.to_string(),
-            HyperLinkTarget::Internal(v) => format!("#{}", v),
-        };
-        let attributes: Vec<(&str, &str)> = if let Some(alt_text) = value.inner().caption() {
-            vec![("src", &src), ("alt", alt_text.inner())]
-        } else {
-            vec![("src", &src)]
-        };
         self.closed_tag_with(
             &mut self.w.borrow_mut(),
             "img",
-            attributes.as_slice(),
+            &[("src", &value.inner())],
             false,
             false,
         )

@@ -84,18 +84,6 @@ where
     }
 }
 
-// impl<T> AutoLabel for T
-// where
-//     T: HasCaption + HasLabel,
-// {
-//     fn auto_label(&mut self) -> &mut Self {
-//         if let Some(caption) = self.caption() {
-//             self.set_label(Label::safe_from(&caption.to_string(), None))
-//         }
-//         self
-//     }
-// }
-
 // ------------------------------------------------------------------------------------------------
 // Implementations
 // ------------------------------------------------------------------------------------------------
@@ -159,7 +147,6 @@ impl Label {
     /// `"hello?world"` will both result in `"hello_world"`. This function will place the colon
     /// character as a separator between prefix and label text if a prefix value is provided.
     ///
-    ///
     /// This function will panic if the label is empty, or the first character **is not** a Unicode
     /// letter (as the replacement underscore is not a valid start character for labels). Also, if
     /// the prefix has been provided and is empty, or contains non-Unicode letter characters.
@@ -184,5 +171,27 @@ impl Label {
             String::new()
         };
         Self(format!("{}{}{}", prefix, first, rest))
+    }
+
+    /// Copy the label value (or `None`) from a labeled element. This allows a reference label, or
+    /// link to be created without having to copy the text of the label value. This is even more
+    /// useful when used with the `AutoLabel` trait, as shown below.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use somedoc::model::block::{AutoLabel, HasLabel, Heading, Label};
+    /// use somedoc::model::inline::HyperLink;
+    ///
+    /// let header = Heading::section("Section One").auto_label().clone();
+    ///
+    /// let ref_to_section = HyperLink::from(Label::copy_from(&header).unwrap());
+    /// ```
+    ///
+    pub fn copy_from(labeled: &impl HasLabel) -> Option<Self> {
+        match labeled.label() {
+            None => None,
+            Some(label) => Some(Self(label.inner().clone())),
+        }
     }
 }

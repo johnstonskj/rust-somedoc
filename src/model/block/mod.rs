@@ -260,7 +260,7 @@ pub use heading::{Heading, HeadingLevel};
 
 #[doc(hidden)]
 pub mod label;
-pub use label::{HasLabel, Label};
+pub use label::{AutoLabel, HasLabel, Label};
 
 #[doc(hidden)]
 pub mod list;

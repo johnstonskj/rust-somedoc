@@ -535,3 +535,24 @@ fn test_nested_text_styles() {
         None,
     );
 }
+
+#[test]
+fn test_hyper_links() {
+    assert_latex_eq(
+        common::parts::hyper_links,
+        r###"\begin{document}
+
+  \maketitle
+
+  \url{https://example.org/}
+
+  \href{https://example.org/}{example}
+
+  \ref{section-2}
+
+  \hyperref[section-2]{example}
+
+\end{document}"###,
+        None,
+    );
+}

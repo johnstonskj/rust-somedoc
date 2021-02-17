@@ -48,7 +48,7 @@ TODO:
 
 -----
 
-Jump to: [[Concepts Hierarchy>>.||anchor=HConcepts_Hierarchy]] | [[Concepts>>.||anchor=HConcepts]] | [[Collections>>.||anchor=HCollections]] | [[Appendix - RDF>>.||anchor=HAppendix_-_RDF]]
+Jump to: [[Concepts Hierarchy>>||anchor=Concepts_Hierarchy]] | [[Concepts>>||anchor=Concepts]] | [[Collections>>||anchor=Collections]] | [[Appendix - RDF>>||anchor=Appendix_-_RDF]]
 
 -----
 
@@ -275,7 +275,7 @@ fn test_image_block() {
         common::parts::image_block,
         r###"
 
-image:[[https://example.org/example.png]]
+image:https://example.org/example.png
 "###,
     );
 }
@@ -286,7 +286,7 @@ fn test_image_block_with_label_and_caption() {
         common::parts::image_block_with_label_and_caption,
         r###"
 
-(% id="img:example" %) image:[[https://example.org/example.png]]
+(% id="img:example" %) image:https://example.org/example.png
 "###,
     );
 }
@@ -361,6 +361,32 @@ Here is some **//bold italic//** text.
 Here is some bold italic plain text.
 
 Here is some //bold plain italic// text.
+"###,
+    );
+}
+
+#[test]
+fn test_hyper_links() {
+    assert_markdown_eq(
+        common::parts::hyper_links,
+        r###"
+[[https://example.org/]]
+
+[[example>>https://example.org/]]
+
+[[||anchor=section-2]]
+
+[[example>>||anchor=section-2]]
+"###,
+    );
+}
+
+#[test]
+fn test_complex_paragraph() {
+    assert_markdown_eq(
+        common::parts::complex_paragraph,
+        r###"
+This paragraph has [[a link>>https://example.org/]], some math:&nbsp;{{formula}}x=2+2^2{{/formula}}, a line break,\\an image:&nbsp;image:https://example.org/favicon.png&nbsp;---&nbsp; all together!
 "###,
     );
 }

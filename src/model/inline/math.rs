@@ -1,4 +1,6 @@
 use crate::error;
+use crate::model::block::BlockContent;
+use crate::model::inline::InlineContent;
 #[cfg(feature = "fmt_json")]
 use serde::{Deserialize, Serialize};
 use std::ops::Deref;
@@ -40,6 +42,14 @@ impl Deref for Math {
         &self.0
     }
 }
+
+impl Into<BlockContent> for Math {
+    fn into(self) -> BlockContent {
+        BlockContent::MathBlock(self.into())
+    }
+}
+
+inline_impls!(Math);
 
 inner_impl!(Math, String);
 

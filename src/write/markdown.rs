@@ -781,45 +781,48 @@ impl<'a, W: Write> TableVisitor for MarkdownWriter<'a, W> {
 }
 
 impl<'a, W: Write> InlineVisitor for MarkdownWriter<'a, W> {
-    // fn anchor(&self, value: &Anchor) -> crate::error::Result<()> {
-    //     if self.flavor == MarkdownFlavor::XWiki {
-    //         self.write(&format!("(% id=\"{}\" %)", value.inner()))?;
-    //     }
-    //     Ok(())
-    // }
-
     fn link(&self, value: &HyperLink) -> crate::error::Result<()> {
-        let mut w = self.w.borrow_mut();
-        write!(w, "[[")?;
-        if let Some(alt_text) = value.caption() {
-            write!(w, "{}", alt_text.inner())?;
-            write!(w, ">>")?;
-        }
-        match value.target() {
-            HyperLinkTarget::External(value) => write!(w, "{}]]", value)?,
-            HyperLinkTarget::Internal(value) => write!(
-                w,
-                ".||anchor=H{}]]",
-                value
-                    .inner()
-                    .trim()
-                    .replace(" ", "")
-                    .replace("(", "28")
-                    .replace(")", "29")
-            )?,
+        if matches!(self.flavor, MarkdownFlavor::XWiki) {
+            self.write("[[")?;
+            if let Some(alt_text) = value.caption() {
+                self.write(alt_text.inner())?;
+                self.write(">>")?;
+            }
+            match value.target() {
+                HyperLinkTarget::External(value) => self.write(&format!("{}]]", value))?,
+                HyperLinkTarget::Internal(value) => {
+                    self.write(&format!("||anchor={}]]", value.inner()))?
+                }
+            }
+        } else {
+            let target = match value.target() {
+                HyperLinkTarget::External(v) => {
+                    if v.contains(' ') {
+                        format!("<{}>", v)
+                    } else {
+                        v.to_string()
+                    }
+                }
+                HyperLinkTarget::Internal(v) => format!("#{}", v),
+            };
+            self.write(&format!(
+                "[{}]({})",
+                match value.caption() {
+                    Some(caption) => caption.inner(),
+                    None => "",
+                },
+                target
+            ))?;
         }
         Ok(())
     }
 
     fn image(&self, value: &Image) -> crate::error::Result<()> {
-        let prefix = if self.flavor == MarkdownFlavor::XWiki {
-            "image:"
+        self.write(&if self.flavor == MarkdownFlavor::XWiki {
+            format!("image:{}", value.inner())
         } else {
-            "!"
-        };
-        self.write(prefix)?;
-        self.link(value.inner())?;
-        Ok(())
+            format!("![]({})", value.inner())
+        })
     }
 
     fn text(&self, value: &Text) -> crate::error::Result<()> {
@@ -858,7 +861,7 @@ impl<'a, W: Write> InlineVisitor for MarkdownWriter<'a, W> {
 
     fn line_break(&self) -> crate::error::Result<()> {
         if self.flavor == MarkdownFlavor::XWiki {
-            self.write(" \\")?;
+            self.write("\\\\")?;
         } else {
             self.write("  \n")?;
         }
