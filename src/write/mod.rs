@@ -180,7 +180,7 @@ impl Display for OutputFormat {
             "{}",
             match self {
                 #[cfg(feature = "fmt_markdown")]
-                Self::Markdown(f) => f.to_string(),
+                Self::Markdown(f) => format!("markdown+{}", f.to_string()),
                 #[cfg(feature = "fmt_html")]
                 Self::Html => "html".to_string(),
                 #[cfg(feature = "fmt_json")]
@@ -196,18 +196,29 @@ impl FromStr for OutputFormat {
     type Err = error::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            #[cfg(feature = "fmt_markdown")]
-            "md" | "markdown" => Ok(Self::Markdown(MarkdownFlavor::GitHub)),
-            #[cfg(feature = "fmt_markdown")]
-            "xwiki" => Ok(Self::Markdown(MarkdownFlavor::XWiki)),
-            #[cfg(feature = "fmt_html")]
-            "html" => Ok(Self::Html),
-            #[cfg(feature = "fmt_json")]
-            "json" => Ok(Self::Json),
-            #[cfg(feature = "fmt_latex")]
-            "latex" => Ok(Self::Latex),
-            _ => Err(error::ErrorKind::UnknownFormat.into()),
+        let parts: Vec<&str> = s.split('+').collect();
+        if parts.len() < 1 || parts.len() > 2 {
+            Err(error::ErrorKind::UnknownFormat.into())
+        } else {
+            match *parts.first().unwrap() {
+                #[cfg(feature = "fmt_markdown")]
+                "md" | "markdown" => {
+                    if let Some(flavor) = parts.get(1) {
+                        Ok(Self::Markdown(MarkdownFlavor::from_str(flavor)?))
+                    } else {
+                        Ok(Self::Markdown(MarkdownFlavor::default()))
+                    }
+                }
+                #[cfg(feature = "fmt_markdown")]
+                "xwiki" => Ok(Self::Markdown(MarkdownFlavor::XWiki)),
+                #[cfg(feature = "fmt_html")]
+                "html" => Ok(Self::Html),
+                #[cfg(feature = "fmt_json")]
+                "json" => Ok(Self::Json),
+                #[cfg(feature = "fmt_latex")]
+                "latex" | "tex" => Ok(Self::Latex),
+                _ => Err(error::ErrorKind::UnknownFormat.into()),
+            }
         }
     }
 }

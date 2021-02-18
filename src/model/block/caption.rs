@@ -10,6 +10,9 @@ use std::ops::Deref;
 /// A `Caption` instance holds simple plain, un-styled, text, it is intended to be included with
 /// blocks that are commonly labeled such as tables, images, etc.
 ///
+/// While some formats do allow styled text within captions, this is currently not supported. It
+/// may be possible in the future to provide a styled caption with an inner list of `InlineContent`.
+///
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "fmt_json", derive(Serialize, Deserialize))]
 pub struct Caption(String);

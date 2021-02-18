@@ -159,11 +159,11 @@ impl Display for MarkdownFlavor {
             f,
             "{}",
             match self {
-                MarkdownFlavor::Strict => "markdown",
+                MarkdownFlavor::Strict => "strict",
                 MarkdownFlavor::CommonMark => "commonmark",
                 MarkdownFlavor::GitHub => "gfm",
                 MarkdownFlavor::Multi => "multi",
-                MarkdownFlavor::PhpExtra => "mdextra",
+                MarkdownFlavor::PhpExtra => "extra",
                 MarkdownFlavor::XWiki => "xwiki",
             }
         )
@@ -181,11 +181,11 @@ impl FromStr for MarkdownFlavor {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "strict" => Ok(Self::Strict),
+            "og" | "strict" => Ok(Self::Strict),
             "cm" | "common" | "commonmark" => Ok(Self::CommonMark),
-            "gfm" | "github" => Ok(Self::GitHub),
+            "github" | "gfm" => Ok(Self::GitHub),
             "mmd" | "multi" => Ok(Self::Multi),
-            "php_extra" | "mdextra" => Ok(Self::PhpExtra),
+            "php_extra" | "extra" => Ok(Self::PhpExtra),
             "xwiki" => Ok(Self::XWiki),
             _ => Err(error::ErrorKind::UnknownFormat.into()),
         }

@@ -113,6 +113,11 @@ println!("{}", doc_str);
 
 ## Changes
 
+**Version 0.2.7**
+
+* Testing: test the `to_string` and `from_str` functionality for `OutputFormat`.
+  * `OutputFormat` now delegates the addition, and parsing, of flavors.
+
 **Version 0.2.6**
 
 * Testing: better link testing.
