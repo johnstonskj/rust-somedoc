@@ -32,7 +32,7 @@ TODO:
 
 [[http://amazon.com/vocabulary/fashion-design#DesignScheme]]
 
-(% id="Labels" %)
+{{id name="Labels" /}}
 == Labels ==
 
 
@@ -45,7 +45,7 @@ TODO:
 |Clothing shapes, patterns, and details|**en**
 
 
-(% id="Other_Properties" %)
+{{id name="Other_Properties" /}}
 == Other Properties ==
 
 -----
@@ -54,7 +54,7 @@ Jump to: [[Concepts Hierarchy>>||anchor=Concepts_Hierarchy]] | [[Concepts>>||anc
 
 -----
 
-(% id="Concept_Hierarchy" %)
+{{id name="Concept_Hierarchy" /}}
 == Concept Hierarchy ==
 
 * **First item**
@@ -63,7 +63,7 @@ Jump to: [[Concepts Hierarchy>>||anchor=Concepts_Hierarchy]] | [[Concepts>>||anc
 * First item
 
 
-(% id="Appendix_-_RDF" %)
+{{id name="Appendix_-_RDF" /}}
 == Appendix - RDF ==
 
 {{code language="turtle"}}
@@ -111,7 +111,7 @@ fn test_document_with_labeled_heading() {
     assert_markdown_eq(
         common::parts::document_with_labeled_heading,
         r###"
-(% id="Test_Document" %)
+{{id name="Test_Document" /}}
 = Test Document =
 "###,
     );
@@ -196,7 +196,7 @@ fn test_labeled_ordered_list() {
     assert_markdown_eq(
         common::parts::labeled_ordered_list,
         r###"
-(% id="lst1" %)
+{{id name="lst1" /}}
 1. one
 1. two
 1. three
@@ -292,7 +292,7 @@ fn test_image_block_with_label_and_caption() {
         common::parts::image_block_with_label_and_caption,
         r###"
 
-(% id="img:example" %)
+{{id name="img:example" /}}
 image:https://example.org/example.png
 "###,
     );
@@ -315,7 +315,7 @@ fn test_math_block_with_label_and_caption() {
         common::parts::math_block_with_label_and_caption,
         r###"
 
-(% id="math:example" %)
+{{id name="math:example" /}}
 {{formula}}x=2+2^2{{/formula}}
 "###,
     );

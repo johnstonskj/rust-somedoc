@@ -235,7 +235,7 @@ impl<'a, W: Write> MarkdownWriter<'a, W> {
                     self.write(&format!("[{}] ", label.to_string()))?;
                 }
                 MarkdownFlavor::XWiki => {
-                    self.write(&format!("(% id=\"{}\" %)", label.to_string()))?;
+                    self.write(&format!("{{{{id name=\"{}\" /}}}}", label.to_string()))?;
                     self.end_line()?;
                     self.start_line()?;
                 }

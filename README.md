@@ -113,6 +113,10 @@ println!("{}", doc_str);
 
 ## Changes
 
+**Version 0.2.9**
+
+Fixed: using id macro for anchors in XWiki output.
+
 **Version 0.2.8**
 
 Fixed: trailing '|' removed from table rows for XWiki output.
