@@ -113,6 +113,10 @@ println!("{}", doc_str);
 
 ## Changes
 
+**Version 0.2.8**
+
+Fixed: trailing '|' removed from table rows for XWiki output.
+
 **Version 0.2.7**
 
 * Testing: test the `to_string` and `from_str` functionality for `OutputFormat`.

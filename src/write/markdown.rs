@@ -235,7 +235,9 @@ impl<'a, W: Write> MarkdownWriter<'a, W> {
                     self.write(&format!("[{}] ", label.to_string()))?;
                 }
                 MarkdownFlavor::XWiki => {
-                    self.write(&format!("(% id=\"{}\" %) ", label.to_string()))?;
+                    self.write(&format!("(% id=\"{}\" %)", label.to_string()))?;
+                    self.end_line()?;
+                    self.start_line()?;
                 }
                 _ => {}
             }
@@ -744,15 +746,15 @@ impl<'a, W: Write> TableVisitor for MarkdownWriter<'a, W> {
     }
 
     fn end_table_header_row(&self) -> crate::error::Result<()> {
-        self.write("|")?;
-        self.end_line()?;
-        self.start_line()?;
         if self.flavor != MarkdownFlavor::XWiki {
-            self.write(&format!("|{}|", self.table_sep_row.borrow().join("|")))?;
-            self.table_sep_row.borrow_mut().clear();
+            self.write("|")?;
             self.end_line()?;
             self.start_line()?;
+            self.write(&format!("|{}|", self.table_sep_row.borrow().join("|")))?;
+            self.table_sep_row.borrow_mut().clear();
         }
+        self.end_line()?;
+        self.start_line()?;
         Ok(())
     }
 
@@ -770,7 +772,9 @@ impl<'a, W: Write> TableVisitor for MarkdownWriter<'a, W> {
     }
 
     fn end_table_row(&self, _: usize) -> crate::error::Result<()> {
-        self.write("|")?;
+        if self.flavor != MarkdownFlavor::XWiki {
+            self.write("|")?;
+        }
         self.end_line()?;
         self.start_line()
     }
