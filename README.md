@@ -113,6 +113,10 @@ println!("{}", doc_str);
 
 ## Changes
 
+**Version 0.2.10**
+
+Added: use basic HTML output for tables in CommonMark.
+
 **Version 0.2.9**
 
 Fixed: using id macro for anchors in XWiki output.

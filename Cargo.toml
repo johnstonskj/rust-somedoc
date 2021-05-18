@@ -1,6 +1,6 @@
 [package]
 name = "somedoc"
-version = "0.2.9"
+version = "0.2.10"
 authors = ["Simon Johnston <johnstonskj@gmail.com>"]
 edition = "2018"
 description = "A very simple document model and markup generator."

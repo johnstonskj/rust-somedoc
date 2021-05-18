@@ -35,7 +35,10 @@ fn test_skos() {
 > **skos:altLabel**
 > 
 
-
+<table>
+<tr><th>Label text</th><th>Language</th></tr>
+<tr><td>Clothing shapes, patterns, and details</td><td>**en**</td></tr>
+</table>
 
 ## Other Properties
 

@@ -693,7 +693,8 @@ impl<'a, W: Write> BlockVisitor for MarkdownWriter<'a, W> {
 
     fn table_visitor(&self) -> Option<&dyn TableVisitor> {
         match self.flavor {
-            MarkdownFlavor::GitHub
+            MarkdownFlavor::CommonMark
+            | MarkdownFlavor::GitHub
             | MarkdownFlavor::Multi
             | MarkdownFlavor::PhpExtra
             | MarkdownFlavor::XWiki => Some(self),
@@ -713,10 +714,20 @@ impl<'a, W: Write> TableVisitor for MarkdownWriter<'a, W> {
         label: &Option<Label>,
     ) -> crate::error::Result<()> {
         self.write_label_before(label)?;
+
+        if self.flavor == MarkdownFlavor::CommonMark {
+            self.write("<table>")?;
+            self.end_line()?;
+            self.start_line()?;
+        }
+
         Ok(())
     }
 
     fn start_table_header_row(&self) -> crate::error::Result<()> {
+        if self.flavor == MarkdownFlavor::CommonMark {
+            self.write("<tr>")?;
+        }
         Ok(())
     }
 
@@ -725,28 +736,34 @@ impl<'a, W: Write> TableVisitor for MarkdownWriter<'a, W> {
         column_cell: &Column,
         _column_idx: usize,
     ) -> crate::error::Result<()> {
-        self.write(&format!(
-            "|{}{}",
-            if self.flavor == MarkdownFlavor::XWiki {
-                "="
-            } else {
-                self.table_sep_row.borrow_mut().push(
-                    match column_cell.alignment() {
-                        Alignment::Justified => "-----",
-                        Alignment::Left => ":----",
-                        Alignment::Right => "----:",
-                        Alignment::Centered => "--:--",
-                    }
-                    .to_string(),
-                );
-                ""
-            },
-            column_cell.text()
-        ))
+        if self.flavor == MarkdownFlavor::CommonMark {
+            self.write(&format!("<th>{}</th>", column_cell.text()))
+        } else {
+            self.write(&format!(
+                "|{}{}",
+                if self.flavor == MarkdownFlavor::XWiki {
+                    "="
+                } else {
+                    self.table_sep_row.borrow_mut().push(
+                        match column_cell.alignment() {
+                            Alignment::Justified => "-----",
+                            Alignment::Left => ":----",
+                            Alignment::Right => "----:",
+                            Alignment::Centered => "--:--",
+                        }
+                        .to_string(),
+                    );
+                    ""
+                },
+                column_cell.text()
+            ))
+        }
     }
 
     fn end_table_header_row(&self) -> crate::error::Result<()> {
-        if self.flavor != MarkdownFlavor::XWiki {
+        if self.flavor == MarkdownFlavor::CommonMark {
+            self.write("</tr>")?;
+        } else if self.flavor != MarkdownFlavor::XWiki {
             self.write("|")?;
             self.end_line()?;
             self.start_line()?;
@@ -759,24 +776,51 @@ impl<'a, W: Write> TableVisitor for MarkdownWriter<'a, W> {
     }
 
     fn start_table_row(&self, _: usize) -> crate::error::Result<()> {
+        if self.flavor == MarkdownFlavor::CommonMark {
+            self.write("<tr>")?;
+        }
         Ok(())
     }
 
     fn start_table_cell(&self, _: usize, label: &Option<Label>) -> crate::error::Result<()> {
-        self.write_label_before(label)?;
-        self.write("|")
+        if self.flavor == MarkdownFlavor::CommonMark {
+            self.write("<td>")
+        } else {
+            self.write_label_before(label)?;
+            self.write("|")
+        }
     }
 
     fn end_table_cell(&self, _: usize, label: &Option<Label>) -> crate::error::Result<()> {
-        self.write_label_after(label)
+        if self.flavor == MarkdownFlavor::CommonMark {
+            self.write("</td>")
+        } else {
+            self.write_label_after(label)
+        }
     }
 
     fn end_table_row(&self, _: usize) -> crate::error::Result<()> {
-        if self.flavor != MarkdownFlavor::XWiki {
+        if self.flavor == MarkdownFlavor::CommonMark {
+            self.write("</tr>")?;
+        } else if self.flavor != MarkdownFlavor::XWiki {
             self.write("|")?;
         }
         self.end_line()?;
         self.start_line()
+    }
+
+    fn end_table(
+        &self,
+        _caption: &Option<Caption>,
+        label: &Option<Label>,
+    ) -> crate::error::Result<()> {
+        self.write_label_after(label)?;
+
+        if self.flavor == MarkdownFlavor::CommonMark {
+            self.write("</table>")?;
+        }
+
+        Ok(())
     }
 
     fn inline_visitor(&self) -> Option<&dyn InlineVisitor> {
